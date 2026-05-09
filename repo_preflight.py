@@ -148,7 +148,9 @@ DRIFT_MARKERS = [
 
 PUBLIC_EXPORT_PRIVATE_PATH_TERMS = [
     "career-vault",
-    "launch",
+    "launch-plan",
+    "launch_notes",
+    "launch_plan",
     "low_key_clearance",
     "monetization",
     "opportunity-board/outreach",
