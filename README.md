@@ -1,8 +1,14 @@
 # Repo Preflight Drift Scanner
 
-Status: local v0
+Status: public GitHub Action and local CLI
 
-Repo Preflight Drift Scanner is a local CLI and GitHub Action for AI-assisted development workflows.
+Repo Preflight Drift Scanner is a deterministic local CLI and GitHub Action for AI-assisted development workflows.
+
+It answers one practical question before you merge, demo, or publish:
+
+```text
+Is this repo carrying obvious release blockers, risky claims, private-publication surfaces, or AI-process drift?
+```
 
 It produces Markdown, JSON, HTML, and SARIF reports covering:
 
@@ -12,6 +18,30 @@ It produces Markdown, JSON, HTML, and SARIF reports covering:
 - secret-bearing filenames
 - generated artifacts
 - open work and draft-content drift signals
+- public-export hygiene for public repos and packages
+
+## Install In GitHub Actions
+
+```yaml
+name: Repo Preflight
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  repo-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: camirian/repo-preflight-drift-scanner@v0.3.3
+        with:
+          repo: "."
+          profile: public-export
+          paranoid: true
+          out-html: REPO_PREFLIGHT_REPORT.html
+          out-sarif: REPO_PREFLIGHT_REPORT.sarif
+```
 
 ## Local Run
 
@@ -92,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: your-org/repo-preflight-drift-scanner@v0
+      - uses: camirian/repo-preflight-drift-scanner@v0.3.3
         with:
           repo: "."
           profile: strict
@@ -115,6 +145,20 @@ python3 repo_preflight.py \
 ```
 
 The synthetic sample intentionally blocks so users can inspect the report format without using private project data.
+
+## 60-Second Demo
+
+1. Run the scanner against the synthetic sample:
+
+   ```bash
+   python3 repo_preflight.py --repo examples/sample-repo --include-fixtures
+   ```
+
+2. The scanner blocks the repo because it contains missing process docs, unchecked gates, risky claims, generated artifacts, and drift markers.
+3. Open `REPO_PREFLIGHT_REPORT.md` to see the fix list.
+4. Run against your repo with `--profile public-export --paranoid` before publishing.
+
+The scanner is intentionally conservative. It is designed to make obvious release blockers visible before they become public cleanup work.
 
 ## Verify
 
