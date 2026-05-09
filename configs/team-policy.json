@@ -1,0 +1,33 @@
+{
+  "required_process_files": {
+    "README": ["README.md"],
+    "SPEC": ["SPEC.md", "docs/SPEC.md"],
+    "VERIFICATION_PLAN": ["VERIFICATION_PLAN.md", "docs/VERIFICATION_PLAN.md"],
+    "PRE_RELEASE_CHECKLIST": ["PRE_RELEASE_CHECKLIST.md", "docs/PRE_RELEASE_CHECKLIST.md"],
+    "OWNERSHIP": ["CODEOWNERS", ".github/CODEOWNERS", "docs/OWNERSHIP.md"]
+  },
+  "risky_claims": [
+    "enterprise ready",
+    "zero risk",
+    "audit proof",
+    "compliance-ready"
+  ],
+  "drift_markers": [
+    "ask the team later",
+    "temporary workaround",
+    "quick hack"
+  ],
+  "secret_filenames": [
+    ".npmrc",
+    ".pypirc"
+  ],
+  "generated_dirs": [
+    "coverage",
+    "tmp",
+    "reports"
+  ],
+  "excluded_dirs": [
+    ".venv",
+    "venv"
+  ]
+}

@@ -1,0 +1,36 @@
+name: Repo Preflight
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  repo-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run repo preflight
+        uses: your-org/repo-preflight-drift-scanner@v0
+        with:
+          repo: "."
+          profile: strict
+          out-md: REPO_PREFLIGHT_REPORT.md
+          out-json: REPO_PREFLIGHT_REPORT.json
+          out-html: REPO_PREFLIGHT_REPORT.html
+          out-sarif: REPO_PREFLIGHT_REPORT.sarif
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-preflight-report
+          path: |
+            REPO_PREFLIGHT_REPORT.md
+            REPO_PREFLIGHT_REPORT.json
+            REPO_PREFLIGHT_REPORT.html
+            REPO_PREFLIGHT_REPORT.sarif

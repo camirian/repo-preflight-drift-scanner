@@ -1,0 +1,79 @@
+name: Repo Preflight Drift Scanner
+description: Deterministic preflight scanner for AI-assisted repositories.
+
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  repo:
+    description: Repository path to scan.
+    required: false
+    default: "."
+  profile:
+    description: Scan profile. Use strict for release artifacts or docs for documentation-heavy areas.
+    required: false
+    default: "strict"
+  out-md:
+    description: Markdown report path.
+    required: false
+    default: "REPO_PREFLIGHT_REPORT.md"
+  out-json:
+    description: JSON report path.
+    required: false
+    default: "REPO_PREFLIGHT_REPORT.json"
+  out-html:
+    description: Optional HTML report path.
+    required: false
+    default: ""
+  out-sarif:
+    description: Optional SARIF report path.
+    required: false
+    default: ""
+  baseline-json:
+    description: Optional prior JSON report for before/after diffing.
+    required: false
+    default: ""
+  config:
+    description: Optional JSON rule-pack path. Repeat support is available in the CLI.
+    required: false
+    default: ""
+  include-fixtures:
+    description: Include examples/sample-repo fixture paths.
+    required: false
+    default: "false"
+  github-annotations:
+    description: Emit GitHub workflow annotations for findings.
+    required: false
+    default: "true"
+  fail-on-blockers:
+    description: Fail the workflow when blocker findings exist.
+    required: false
+    default: "true"
+
+outputs:
+  report-md:
+    description: Markdown report path.
+    value: ${{ inputs.out-md }}
+  report-json:
+    description: JSON report path.
+    value: ${{ inputs.out-json }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run repo preflight
+      shell: bash
+      env:
+        INPUT_REPO: ${{ inputs.repo }}
+        INPUT_PROFILE: ${{ inputs.profile }}
+        INPUT_OUT_MD: ${{ inputs.out-md }}
+        INPUT_OUT_JSON: ${{ inputs.out-json }}
+        INPUT_OUT_HTML: ${{ inputs.out-html }}
+        INPUT_OUT_SARIF: ${{ inputs.out-sarif }}
+        INPUT_BASELINE_JSON: ${{ inputs.baseline-json }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_INCLUDE_FIXTURES: ${{ inputs.include-fixtures }}
+        INPUT_GITHUB_ANNOTATIONS: ${{ inputs.github-annotations }}
+        INPUT_FAIL_ON_BLOCKERS: ${{ inputs.fail-on-blockers }}
+      run: "$GITHUB_ACTION_PATH/scripts/action_entrypoint.sh"

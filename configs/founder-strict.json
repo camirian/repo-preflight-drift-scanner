@@ -1,0 +1,31 @@
+{
+  "required_process_files": {
+    "README": ["README.md"],
+    "SPEC": ["SPEC.md", "docs/SPEC.md"],
+    "VERIFICATION_PLAN": ["VERIFICATION_PLAN.md", "docs/VERIFICATION_PLAN.md"],
+    "PRE_RELEASE_CHECKLIST": ["PRE_RELEASE_CHECKLIST.md", "docs/PRE_RELEASE_CHECKLIST.md"],
+    "MONETIZATION_NOTES": ["MONETIZATION_NOTES.md", "docs/MONETIZATION_NOTES.md"]
+  },
+  "risky_claims": [
+    "guaranteed revenue",
+    "passive income",
+    "fully automated business",
+    "no human review needed"
+  ],
+  "drift_markers": [
+    "coming soon",
+    "figure this out",
+    "not implemented"
+  ],
+  "generated_dirs": [
+    "coverage",
+    "tmp"
+  ],
+  "excluded_dirs": [
+    ".venv",
+    "venv"
+  ],
+  "excluded_files": [
+    "package-lock.json"
+  ]
+}

@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify scanner
+        run: python3 verify_scanner.py
+
+      - name: Compile Python
+        run: python3 -m py_compile repo_preflight.py verify_scanner.py
+
+  action-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run action against synthetic fixture
+        uses: ./
+        with:
+          repo: examples/sample-repo
+          include-fixtures: true
+          fail-on-blockers: false
+          out-md: FIXTURE_REPORT.md
+          out-json: FIXTURE_REPORT.json
+          out-html: FIXTURE_REPORT.html
+          out-sarif: FIXTURE_REPORT.sarif
+
+      - name: Assert fixture is blocked
+        shell: python
+        run: |
+          import json
+          payload = json.load(open("FIXTURE_REPORT.json", encoding="utf-8"))
+          assert payload["decision"] == "BLOCKED", payload
+          assert payload["counts"]["blocker"] > 0, payload
+
+      - name: Upload fixture reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-report
+          path: |
+            FIXTURE_REPORT.md
+            FIXTURE_REPORT.json
+            FIXTURE_REPORT.html
+            FIXTURE_REPORT.sarif
