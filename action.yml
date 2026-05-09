@@ -59,7 +59,7 @@ inputs:
     required: false
     default: "180"
   path-mode:
-    description: Path rendering mode: relative, basename, or hash.
+    description: "Path rendering mode: relative, basename, or hash."
     required: false
     default: "relative"
   redact-pattern:
