@@ -32,6 +32,7 @@ TEXT_EXTENSIONS = {
     ".ts",
     ".tsx",
     ".txt",
+    ".xml",
     ".yaml",
     ".yml",
 }
