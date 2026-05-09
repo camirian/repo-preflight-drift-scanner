@@ -36,6 +36,12 @@ TEXT_EXTENSIONS = {
     ".yml",
 }
 
+TEXT_FILENAMES = {
+    "AUTHORS",
+    "LICENSE",
+    "NOTICE",
+}
+
 PROFILES = {
     "strict": {
         "check_process_files": True,
@@ -173,6 +179,7 @@ PUBLIC_EXPORT_PRIVATE_FILE_NAMES = {
 PUBLIC_EXPORT_SENSITIVE_TERMS = [
     "642 uclan",
     "burbank ca",
+    "caaren",
     "caaren amirian",
     "clearance",
     "cui",
@@ -187,6 +194,10 @@ SECRET_LITERAL_PATTERNS = {
     "github_token_literal": re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b"),
     "openai_key_literal": re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
     "aws_access_key_literal": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    "personal_email_literal": re.compile(
+        r"\b[A-Za-z0-9._%+-]+@(gmail|outlook|hotmail|yahoo|icloud|proton)\.com\b",
+        re.IGNORECASE,
+    ),
 }
 
 MAX_TEXT_BYTES = 300_000
@@ -234,7 +245,7 @@ def relative(path: Path, root: Path) -> str:
 
 
 def is_text_candidate(path: Path) -> bool:
-    return path.suffix.lower() in TEXT_EXTENSIONS
+    return path.suffix.lower() in TEXT_EXTENSIONS or path.name in TEXT_FILENAMES
 
 
 def read_text(path: Path) -> str | None:
