@@ -46,6 +46,26 @@ inputs:
     description: Emit GitHub workflow annotations for findings.
     required: false
     default: "true"
+  paranoid:
+    description: Privacy-first reports with basename-only paths and no evidence snippets.
+    required: false
+    default: "false"
+  no-evidence:
+    description: Omit evidence snippets from reports and annotations.
+    required: false
+    default: "false"
+  max-evidence-chars:
+    description: Maximum evidence snippet length.
+    required: false
+    default: "180"
+  path-mode:
+    description: Path rendering mode: relative, basename, or hash.
+    required: false
+    default: "relative"
+  redact-pattern:
+    description: Optional regex pattern to redact from evidence snippets.
+    required: false
+    default: ""
   fail-on-blockers:
     description: Fail the workflow when blocker findings exist.
     required: false
@@ -75,5 +95,10 @@ runs:
         INPUT_CONFIG: ${{ inputs.config }}
         INPUT_INCLUDE_FIXTURES: ${{ inputs.include-fixtures }}
         INPUT_GITHUB_ANNOTATIONS: ${{ inputs.github-annotations }}
+        INPUT_PARANOID: ${{ inputs.paranoid }}
+        INPUT_NO_EVIDENCE: ${{ inputs.no-evidence }}
+        INPUT_MAX_EVIDENCE_CHARS: ${{ inputs.max-evidence-chars }}
+        INPUT_PATH_MODE: ${{ inputs.path-mode }}
+        INPUT_REDACT_PATTERN: ${{ inputs.redact-pattern }}
         INPUT_FAIL_ON_BLOCKERS: ${{ inputs.fail-on-blockers }}
       run: "$GITHUB_ACTION_PATH/scripts/action_entrypoint.sh"

@@ -206,6 +206,31 @@ def main() -> int:
     if not require(baseline_payload["baseline_diff"]["new"] == 0, "Expected no new findings against identical baseline."):
         return 1
 
+    paranoid_result = run(
+        [
+            sys.executable,
+            "repo_preflight.py",
+            "--repo",
+            "examples/sample-repo",
+            "--out-md",
+            "VERIFY_PARANOID_REPORT.md",
+            "--out-json",
+            "VERIFY_PARANOID_REPORT.json",
+            "--paranoid",
+            "--redact-pattern",
+            "release ready",
+            "--include-fixtures",
+        ]
+    )
+    if paranoid_result.returncode == 0:
+        print("Expected paranoid fixture scan to remain blocked.")
+        return 1
+    paranoid_payload = json.loads((ROOT / "VERIFY_PARANOID_REPORT.json").read_text(encoding="utf-8"))
+    if not require(all(finding.get("evidence") is None for finding in paranoid_payload["findings"]), "Expected paranoid report to omit evidence."):
+        return 1
+    if not require(all("/" not in finding["path"] for finding in paranoid_payload["findings"] if finding["path"] != "."), "Expected paranoid report to suppress directory paths."):
+        return 1
+
     compile_result = run([sys.executable, "-m", "py_compile", "repo_preflight.py"])
     if compile_result.returncode != 0:
         print(compile_result.stderr)

@@ -8,6 +8,7 @@ It is not a security or compliance scanner.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import re
@@ -164,6 +165,14 @@ class ScanConfig:
     generated_dirs: set[str]
     excluded_dirs: set[str]
     excluded_files: set[str]
+
+
+@dataclass(frozen=True)
+class ReportOptions:
+    no_evidence: bool = False
+    max_evidence_chars: int = 180
+    path_mode: str = "relative"
+    redactors: tuple[re.Pattern[str], ...] = ()
 
 
 def relative(path: Path, root: Path) -> str:
@@ -413,6 +422,39 @@ def finding_counts(findings: list[Finding]) -> dict[str, int]:
     }
 
 
+def redact_text(text: str | None, options: ReportOptions) -> str | None:
+    if text is None or options.no_evidence:
+        return None
+    value = text[: max(options.max_evidence_chars, 0)]
+    for pattern in options.redactors:
+        value = pattern.sub("[REDACTED]", value)
+    return value
+
+
+def report_path(path: str, options: ReportOptions) -> str:
+    if options.path_mode == "basename":
+        return Path(path).name if path != "." else "."
+    if options.path_mode == "hash":
+        digest = hashlib.sha256(path.encode("utf-8")).hexdigest()[:16]
+        suffix = Path(path).suffix
+        return f"path-{digest}{suffix}"
+    return path
+
+
+def prepare_findings_for_report(findings: list[Finding], options: ReportOptions) -> list[Finding]:
+    return [
+        Finding(
+            level=finding.level,
+            code=finding.code,
+            path=report_path(finding.path, options),
+            message=finding.message,
+            line=finding.line,
+            evidence=redact_text(finding.evidence, options),
+        )
+        for finding in findings
+    ]
+
+
 def finding_key(finding: Finding) -> str:
     return "|".join(
         [
@@ -648,20 +690,33 @@ def main() -> int:
     parser.add_argument("--config", action="append", default=[], type=Path, help="JSON rule-pack config; may be repeated")
     parser.add_argument("--include-fixtures", action="store_true", help="include examples/sample-repo fixture findings")
     parser.add_argument("--github-annotations", action="store_true", help="emit GitHub workflow annotations")
+    parser.add_argument("--paranoid", action="store_true", help="privacy-first reports: basename paths and no evidence snippets")
+    parser.add_argument("--no-evidence", action="store_true", help="omit evidence snippets from reports and annotations")
+    parser.add_argument("--max-evidence-chars", default=180, type=int)
+    parser.add_argument("--redact-pattern", action="append", default=[], help="regex pattern to redact from evidence snippets; may be repeated")
+    parser.add_argument("--path-mode", choices=["relative", "basename", "hash"], default="relative")
     parser.add_argument("--profile", choices=sorted(PROFILES), default="strict")
     args = parser.parse_args()
 
     config = load_config(args.config)
     findings = scan_repo(args.repo, include_fixtures=args.include_fixtures, profile=args.profile, config=config)
-    baseline_diff = diff_against_baseline(findings, args.baseline_json) if args.baseline_json else None
-    args.out_md.write_text(render_markdown(args.repo, findings, args.profile, baseline_diff), encoding="utf-8")
-    write_json(args.repo, findings, args.out_json, args.profile, baseline_diff)
+    path_mode = "basename" if args.paranoid and args.path_mode == "relative" else args.path_mode
+    report_options = ReportOptions(
+        no_evidence=args.no_evidence or args.paranoid,
+        max_evidence_chars=args.max_evidence_chars,
+        path_mode=path_mode,
+        redactors=tuple(re.compile(pattern) for pattern in args.redact_pattern),
+    )
+    report_findings = prepare_findings_for_report(findings, report_options)
+    baseline_diff = diff_against_baseline(report_findings, args.baseline_json) if args.baseline_json else None
+    args.out_md.write_text(render_markdown(args.repo, report_findings, args.profile, baseline_diff), encoding="utf-8")
+    write_json(args.repo, report_findings, args.out_json, args.profile, baseline_diff)
     if args.out_html:
-        args.out_html.write_text(render_html(args.repo, findings, args.profile), encoding="utf-8")
+        args.out_html.write_text(render_html(args.repo, report_findings, args.profile), encoding="utf-8")
     if args.out_sarif:
-        write_sarif(args.repo, findings, args.out_sarif)
+        write_sarif(args.repo, report_findings, args.out_sarif)
     if args.github_annotations:
-        emit_github_annotations(findings)
+        emit_github_annotations(report_findings)
 
     if decision(findings) == "BLOCKED":
         print("Repo preflight found blockers.")

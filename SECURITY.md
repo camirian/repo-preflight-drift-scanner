@@ -33,6 +33,9 @@ When using the scanner on private repositories:
 
 - upload reports only as private artifacts
 - review report evidence snippets before sharing externally
+- use `--paranoid` before sharing reports outside a private repo
+- use `--no-evidence` when snippets may contain sensitive text
+- use `--path-mode basename` or `--path-mode hash` when paths reveal project structure
 - prefer `fail-on-blockers: false` for first-time scans
 - treat SARIF upload as public to repository collaborators
 

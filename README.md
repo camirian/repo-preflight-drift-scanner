@@ -57,6 +57,26 @@ python3 repo_preflight.py \
   --out-json REPO_PREFLIGHT_REPORT.json
 ```
 
+## Privacy Controls
+
+Use paranoid mode before sharing reports outside a private repo:
+
+```bash
+python3 repo_preflight.py \
+  --repo . \
+  --paranoid \
+  --out-md REPO_PREFLIGHT_REPORT.md \
+  --out-json REPO_PREFLIGHT_REPORT.json
+```
+
+Privacy-related options:
+
+- `--paranoid`: basename-only paths and no evidence snippets
+- `--no-evidence`: omit evidence snippets
+- `--max-evidence-chars 80`: shorten evidence snippets
+- `--redact-pattern REGEX`: redact matching evidence text
+- `--path-mode relative|basename|hash`: control path detail in reports
+
 ## GitHub Action
 
 ```yaml
