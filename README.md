@@ -29,9 +29,10 @@ Profiles:
 ```bash
 python3 repo_preflight.py --repo . --profile strict
 python3 repo_preflight.py --repo . --profile docs
+python3 repo_preflight.py --repo . --profile public-export --paranoid
 ```
 
-Use `strict` for release artifacts. Use `docs` when scanning template-heavy documentation where unchecked boxes, claim examples, and old generated artifacts would create noise.
+Use `strict` for release artifacts. Use `docs` when scanning template-heavy documentation where unchecked boxes, claim examples, and old generated artifacts would create noise. Use `public-export` before publishing a repo, package, Action, or public artifact; it adds checks for private planning paths, tracked report outputs, tracked secret-bearing filenames, high-confidence secret literals, and sensitive public-export terms.
 
 ## Rule Packs
 

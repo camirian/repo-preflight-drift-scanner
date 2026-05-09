@@ -12,6 +12,7 @@ import hashlib
 import html
 import json
 import re
+import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -42,6 +43,7 @@ PROFILES = {
         "check_risky_claims": True,
         "check_drift_markers": True,
         "check_generated_artifacts": True,
+        "check_public_export": False,
     },
     "docs": {
         "check_process_files": False,
@@ -49,6 +51,15 @@ PROFILES = {
         "check_risky_claims": False,
         "check_drift_markers": False,
         "check_generated_artifacts": False,
+        "check_public_export": False,
+    },
+    "public-export": {
+        "check_process_files": True,
+        "check_checkboxes": True,
+        "check_risky_claims": True,
+        "check_drift_markers": True,
+        "check_generated_artifacts": True,
+        "check_public_export": True,
     },
 }
 
@@ -135,6 +146,47 @@ DRIFT_MARKERS = [
     "replace this",
 ]
 
+PUBLIC_EXPORT_PRIVATE_PATH_TERMS = [
+    "career-vault",
+    "launch",
+    "low_key_clearance",
+    "monetization",
+    "opportunity-board/outreach",
+    "pricing",
+    "private-notes",
+    "side_business",
+    "sister_",
+    "strategy-vault",
+    "terminal_handoff",
+]
+
+PUBLIC_EXPORT_PRIVATE_FILE_NAMES = {
+    "HANDOFF.md",
+    "LAUNCH.md",
+    "MONETIZATION_NOTES.md",
+    "PRODUCT_LISTING.md",
+    "terminal_handoff.md",
+}
+
+PUBLIC_EXPORT_SENSITIVE_TERMS = [
+    "642 uclan",
+    "burbank ca",
+    "caaren amirian",
+    "clearance",
+    "cui",
+    "export control",
+    "itar",
+    "northrop",
+    "grumman",
+]
+
+SECRET_LITERAL_PATTERNS = {
+    "private_key_literal": re.compile(r"BEGIN [A-Z ]*PRIVATE KEY"),
+    "github_token_literal": re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b"),
+    "openai_key_literal": re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
+    "aws_access_key_literal": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+}
+
 MAX_TEXT_BYTES = 300_000
 CONFIG_LIST_KEYS = {
     "risky_claims",
@@ -215,6 +267,101 @@ def line_findings(
                 )
                 break
     return findings
+
+
+def secret_literal_findings(root: Path, path: Path, text: str) -> list[Finding]:
+    findings = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        for code, pattern in SECRET_LITERAL_PATTERNS.items():
+            if pattern.search(line):
+                findings.append(
+                    Finding(
+                        level="blocker",
+                        code=code,
+                        path=relative(path, root),
+                        line=number,
+                        message="High-confidence secret literal detected. Evidence suppressed.",
+                    )
+                )
+                break
+    return findings
+
+
+def public_export_path_findings(rel: str, path: Path) -> list[Finding]:
+    lowered = rel.lower()
+    findings = []
+    if path.name in PUBLIC_EXPORT_PRIVATE_FILE_NAMES or any(term in lowered for term in PUBLIC_EXPORT_PRIVATE_PATH_TERMS):
+        findings.append(
+            Finding(
+                level="blocker",
+                code="private_publication_surface",
+                path=rel,
+                message="Private strategy/planning path should not be in a public export.",
+            )
+        )
+    if path.suffix.lower() in {".md", ".json", ".html", ".sarif"} and path.stem.lower().endswith("_report"):
+        findings.append(
+            Finding(
+                level="blocker",
+                code="generated_report_tracked",
+                path=rel,
+                message="Generated scanner report should not be in a public export.",
+            )
+        )
+    return findings
+
+
+def tracked_files(root: Path) -> list[str]:
+    if not (root / ".git").exists():
+        return []
+    result = subprocess.run(
+        ["git", "-C", str(root), "ls-files"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return []
+    return [line for line in result.stdout.splitlines() if line]
+
+
+def git_history_findings(root: Path) -> list[Finding]:
+    if not (root / ".git").exists():
+        return []
+    result = subprocess.run(
+        ["git", "-C", str(root), "rev-list", "--count", "HEAD"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return []
+    try:
+        commit_count = int(result.stdout.strip())
+    except ValueError:
+        return []
+    if commit_count <= 1:
+        return []
+    return [
+        Finding(
+            level="warning",
+            code="public_history_requires_audit",
+            path=".",
+            message=f"Repository has {commit_count} commits; audit history before public release.",
+        )
+    ]
+
+
+def dedupe_findings(findings: list[Finding]) -> list[Finding]:
+    seen: set[str] = set()
+    unique = []
+    for finding in findings:
+        key = finding_key(finding)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(finding)
+    return unique
 
 
 def default_config() -> ScanConfig:
@@ -309,6 +456,22 @@ def scan_repo(
     profile_settings = PROFILES[profile]
     findings: list[Finding] = []
 
+    if profile_settings["check_public_export"]:
+        findings.extend(git_history_findings(root))
+        for rel in tracked_files(root):
+            findings.extend(public_export_path_findings(rel, root / rel))
+            name = Path(rel).name.lower()
+            suffix = Path(rel).suffix.lower()
+            if name in config.secret_filenames or suffix in {".pem", ".key", ".p12"}:
+                findings.append(
+                    Finding(
+                        level="blocker",
+                        code="tracked_secret_bearing_filename",
+                        path=rel,
+                        message="Secret-bearing filename is tracked by git. Contents were not read.",
+                    )
+                )
+
     if profile_settings["check_process_files"]:
         for label, candidates in config.required_process_files.items():
             if not any((root / candidate).exists() for candidate in candidates):
@@ -329,6 +492,9 @@ def scan_repo(
             continue
         rel = relative(path, root)
         name = path.name
+
+        if profile_settings["check_public_export"]:
+            findings.extend(public_export_path_findings(rel, path))
 
         if path.is_dir():
             if profile_settings["check_generated_artifacts"] and name in config.generated_dirs:
@@ -367,6 +533,20 @@ def scan_repo(
                 )
             )
             continue
+
+        if profile_settings["check_public_export"] and path.name != "repo_preflight.py":
+            findings.extend(secret_literal_findings(root, path, text))
+            findings.extend(
+                line_findings(
+                    root,
+                    path,
+                    text,
+                    PUBLIC_EXPORT_SENSITIVE_TERMS,
+                    "blocker",
+                    "public_sensitive_term",
+                    "Sensitive public-export term",
+                )
+            )
 
         if path.name != "repo_preflight.py" and profile_settings["check_risky_claims"]:
             findings.extend(
@@ -407,7 +587,7 @@ def scan_repo(
                         )
                     )
 
-    return findings
+    return dedupe_findings(findings)
 
 
 def decision(findings: list[Finding]) -> str:

@@ -11,7 +11,7 @@ inputs:
     required: false
     default: "."
   profile:
-    description: Scan profile. Use strict for release artifacts or docs for documentation-heavy areas.
+    description: Scan profile. Use strict for release artifacts, docs for documentation-heavy areas, or public-export before publishing.
     required: false
     default: "strict"
   out-md:
