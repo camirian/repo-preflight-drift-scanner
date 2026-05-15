@@ -1,0 +1,19 @@
+AI Agent Repo Preflight Kit - Buyer License
+
+Copyright (c) Repository owner. All rights reserved.
+
+This buyer license grants the purchaser permission to use the downloaded kit for personal projects, internal business projects, and repositories controlled by the purchaser or purchaser's organization.
+
+Allowed:
+- run the CLI locally
+- install the GitHub Action in repositories you control
+- modify the files for your own internal use
+- create internal reports for your own projects or organization
+
+Not allowed:
+- resell, redistribute, sublicense, repackage, or upload the paid ZIP as a competing product
+- claim authorship of the kit itself
+- use the kit to imply certification, security approval, compliance approval, or guarantee-style release claims
+
+No warranty:
+The kit is provided as-is. It is a deterministic preflight tool for release-discipline signals. It is not a security scanner, compliance scanner, vulnerability scanner, legal review, or replacement for human engineering judgment.
