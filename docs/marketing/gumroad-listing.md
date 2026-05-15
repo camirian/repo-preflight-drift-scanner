@@ -39,4 +39,4 @@ AI Agent Repo Preflight Kit is a deterministic local CLI and GitHub Action that 
 
 ## Boundary
 
-This is a release-discipline scanner, not a security scanner. It does not guarantee that code is secure, compliant, correct, or production-ready.
+This is a release-discipline scanner, not a security scanner. It does not guarantee that code is secure, compliant, correct, or ready to ship.
