@@ -4,6 +4,8 @@ Status: public GitHub Action and local CLI
 
 Repo Preflight Drift Scanner is a deterministic local CLI and GitHub Action for AI-assisted development workflows.
 
+Use it before merge, demo, release, or public export.
+
 It answers one practical question before you merge, demo, or publish:
 
 ```text
@@ -19,6 +21,24 @@ It produces Markdown, JSON, HTML, and SARIF reports covering:
 - generated artifacts
 - open work and draft-content drift signals
 - public-export hygiene for public repos and packages
+
+## Quick Start
+
+GitHub Action:
+
+```yaml
+- uses: camirian/repo-preflight-drift-scanner@v0.3.3
+  with:
+    repo: "."
+    profile: public-export
+    paranoid: true
+```
+
+Local CLI:
+
+```bash
+python3 repo_preflight.py --repo . --profile public-export --paranoid
+```
 
 ## Install In GitHub Actions
 
