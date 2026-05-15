@@ -53,4 +53,4 @@ Use `--paranoid` before sharing reports outside a private workspace. It suppress
 - `READY`: no blockers detected by this deterministic preflight.
 - `BLOCKED`: one or more blocker findings require review before release.
 
-A clean report does not prove a repository is secure, compliant, correct, or production-ready. It only means this preflight did not find the specific release-discipline problems it checks for.
+A clean report does not prove a repository is secure, compliant, correct, or ready to ship. It only means this preflight did not find the specific release-discipline problems it checks for.
