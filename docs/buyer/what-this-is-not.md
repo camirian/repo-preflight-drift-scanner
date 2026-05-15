@@ -39,8 +39,8 @@ Safe claim:
 
 > This kit helps surface obvious process drift before you publish AI-assisted code.
 
-Unsafe claim:
+Unsafe claim pattern:
 
-> This kit guarantees your AI-generated code is safe or production-ready.
+> This kit guarantees that AI-generated code is safe or fully ready to ship.
 
-Do not use the unsafe claim in product pages, README files, listings, or customer-facing material.
+Do not use unsafe guarantee-style claims in product pages, README files, listings, or customer-facing material.
