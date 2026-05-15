@@ -8,7 +8,7 @@ Run a deterministic preflight before publishing AI-generated or AI-assisted code
 
 AI coding agents can move faster than your release discipline.
 
-They can leave behind unchecked TODOs, risky public claims, generated artifacts, private-publication surfaces, missing process files, and stale report outputs.
+They can leave behind unchecked work markers, risky public claims, generated artifacts, private-publication surfaces, missing process files, and stale report outputs.
 
 Those problems are not always vulnerabilities. They are release-discipline drift.
 
@@ -49,7 +49,7 @@ AI Agent Repo Preflight Kit gives you a local CLI and GitHub Action that scans f
 
 ## What it is not
 
-This is not a security scanner, compliance scanner, vulnerability scanner, or guarantee of production readiness.
+This is not a security scanner, compliance scanner, vulnerability scanner, or guarantee that a repository is ready to ship.
 
 It is a deterministic preflight for visible release-discipline problems.
 
