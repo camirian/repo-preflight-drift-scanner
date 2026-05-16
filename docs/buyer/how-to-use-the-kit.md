@@ -42,7 +42,7 @@ python3 repo_preflight.py --repo . --profile public-export --paranoid
 ## Report outputs
 
 - Markdown: human-readable fix list.
-- JSON: machine-readable results for automation or baselines.
+- JSON: machine-readable results for automation or baselines. See [JSON report schema](../report-schema.md).
 - HTML: shareable local report.
 - SARIF: code-scanning compatible format.
 

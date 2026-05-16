@@ -1,6 +1,6 @@
 AI Agent Repo Preflight Kit - Buyer License
 
-Copyright (c) Repository owner. All rights reserved.
+Copyright (c) 2026 Repo Preflight Drift Scanner contributors. All rights reserved.
 
 This buyer license grants the purchaser permission to use the downloaded kit for personal projects, internal business projects, and repositories controlled by the purchaser or purchaser's organization.
 

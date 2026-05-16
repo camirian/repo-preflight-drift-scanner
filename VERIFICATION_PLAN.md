@@ -1,6 +1,6 @@
 # Verification Plan
 
-Status: draft
+Status: v0.4 release verification baseline
 
 ## Commands
 
@@ -27,5 +27,9 @@ Repo preflight scanner verification passed.
 - Strict self-scan of the scanner product folder returns READY.
 - Docs-profile scan of the opportunity-board area returns READY with low noise.
 - JSON reports include profile, decision, counts, and findings.
+- JSON report schema documentation exists.
 - Composite GitHub Action metadata exists.
 - Action shell entrypoint runs locally in report-only mode and writes Markdown/JSON reports.
+- Rule-pack config behavior is covered by a synthetic fixture.
+- Buyer package manifest excludes seller-only material, generated reports, caches, and git metadata.
+- Extracted buyer package can run the sample demo and produce expected reports.

@@ -22,6 +22,8 @@ It produces Markdown, JSON, HTML, and SARIF reports covering:
 - open work and draft-content drift signals
 - public-export hygiene for public repos and packages
 
+See [docs/report-schema.md](docs/report-schema.md) for the JSON report schema.
+
 ## Quick Start
 
 GitHub Action:

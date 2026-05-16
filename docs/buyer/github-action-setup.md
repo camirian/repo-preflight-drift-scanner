@@ -10,6 +10,8 @@ Use the GitHub Action when you want Repo Preflight to run as part of a repositor
 4. Choose a profile: `strict`, `docs`, or `public-export`.
 5. Save Markdown, JSON, HTML, or SARIF reports as needed.
 
+Use the latest published Action tag unless your release package explicitly includes a newer tag.
+
 ## Recommended settings
 
 For normal pull-request checks, use the `strict` profile.

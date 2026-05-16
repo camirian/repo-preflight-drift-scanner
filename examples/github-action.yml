@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run repo preflight
-        uses: your-org/repo-preflight-drift-scanner@v0
+        uses: camirian/repo-preflight-drift-scanner@v0.3.3
         with:
           repo: "."
           profile: strict
