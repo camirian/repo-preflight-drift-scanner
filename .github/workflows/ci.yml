@@ -21,6 +21,61 @@ jobs:
       - name: Compile Python
         run: python3 -m py_compile repo_preflight.py verify_scanner.py
 
+  package-boundary:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: v0.4
+      PACKAGE_NAME: ai-agent-repo-preflight-kit-v0.4
+      ZIP_PATH: release/ai-agent-repo-preflight-kit-v0.4.zip
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build and verify release package locally
+        run: make release-check VERSION="${VERSION}"
+
+      - name: Inspect package manifest
+        run: python3 -m zipfile -l "${ZIP_PATH}"
+
+      - name: Smoke test extracted package
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "${tmpdir}"' EXIT
+
+          python3 -m zipfile -e "${ZIP_PATH}" "${tmpdir}"
+          cd "${tmpdir}/${PACKAGE_NAME}"
+
+          python3 verify_scanner.py
+
+          set +e
+          python3 repo_preflight.py \
+            --repo examples/sample-repo \
+            --include-fixtures \
+            --out-md EXTRACTED_FIXTURE_REPORT.md \
+            --out-json EXTRACTED_FIXTURE_REPORT.json \
+            --out-html EXTRACTED_FIXTURE_REPORT.html \
+            --out-sarif EXTRACTED_FIXTURE_REPORT.sarif
+          status="$?"
+          set -e
+
+          if [ "${status}" -eq 0 ]; then
+            echo "Expected sample repo fixture to report blockers."
+            exit 1
+          fi
+          if [ "${status}" -ne 1 ]; then
+            echo "Expected sample repo fixture to exit 1, got ${status}."
+            exit "${status}"
+          fi
+
+          python3 - <<'PY'
+          import json
+          payload = json.load(open("EXTRACTED_FIXTURE_REPORT.json", encoding="utf-8"))
+          assert payload["decision"] == "BLOCKED", payload
+          assert payload["counts"]["blocker"] > 0, payload
+          PY
+
   action-smoke:
     runs-on: ubuntu-latest
     steps:

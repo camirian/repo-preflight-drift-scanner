@@ -17,13 +17,15 @@ A release is ready only when both boundaries pass:
 - Buyer docs describe the CLI, Action, examples, configs, reports, and boundaries accurately.
 - Package artifact excludes generated reports, caches, git metadata, marketing material, and seller-only files.
 - Product copy preserves the boundary: deterministic preflight reporting, not security/compliance/vulnerability scanning.
+- CI verifies the package boundary from a locally generated ZIP without uploading or publicly publishing the release artifact.
 
 ## Acceptance Criteria
 
 - `python3 verify_scanner.py` exits zero and prints the expected success line.
 - `python3 repo_preflight.py --repo . --profile public-export --paranoid --out-md VERIFY_PUBLIC_EXPORT_REPORT.md --out-json VERIFY_PUBLIC_EXPORT_REPORT.json` exits zero.
 - `bash scripts/package_release.sh v0.4` creates `release/ai-agent-repo-preflight-kit-v0.4.zip`.
-- Extracted package includes `repo_preflight.py`, `action.yml`, `scripts/action_entrypoint.sh`, `scripts/package_release.sh`, `configs/`, `examples/`, `docs/buyer/`, `docs/report-schema.md`, `README.md`, `README-for-buyers.md`, `SPEC.md`, `VERIFICATION_PLAN.md`, `PRE_RELEASE_CHECKLIST.md`, `SECURITY.md`, `BLAST_RADIUS_AUDIT.md`, `buyer-license.txt`, and `verify_scanner.py`.
+- CI `package-boundary` runs `make release-check`, inspects the generated ZIP manifest, extracts the package, and smoke-tests the extracted artifact.
+- Extracted package includes `repo_preflight.py`, `action.yml`, `scripts/action_entrypoint.sh`, `scripts/package_release.sh`, `configs/`, `examples/`, `docs/buyer/`, `docs/report-schema.md`, `docs/rule-packs.md`, `README.md`, `README-for-buyers.md`, `SPEC.md`, `VERIFICATION_PLAN.md`, `PRE_RELEASE_CHECKLIST.md`, `SECURITY.md`, `BLAST_RADIUS_AUDIT.md`, `buyer-license.txt`, and `verify_scanner.py`.
 - Extracted package quickstart commands run without depending on files outside the extracted artifact.
 
 ## Verification Commands

@@ -10,6 +10,8 @@ Status: current verification strategy with expansion path
 - Prove secret-bearing fixture content is not leaked into reports.
 - Prove the composite Action wrapper follows CLI behavior.
 - Prove privacy controls, baseline diffing, docs profile, and Python compilation remain intact.
+- Prove JSON reports include a schema version for automation consumers.
+- Prove common CLI input errors fail with concise user-facing messages.
 
 ## Current Automated Verification
 
@@ -31,6 +33,9 @@ The verifier covers:
 - Strict self-scan READY decision.
 - Public-export self-scan READY decision.
 - Docs profile READY decision with `configs/founder-strict.json`.
+- Rule-pack behavior for custom required files, terms, generated dirs, secret-bearing filenames, and exclusions.
+- CLI error handling for invalid config JSON, unknown config keys, invalid redaction regex, and missing baseline files.
+- Buyer package boundary and extracted-artifact smoke checks.
 - `py_compile` for `repo_preflight.py` and `verify_scanner.py`.
 
 ## Manual Smoke Checks

@@ -72,6 +72,91 @@ def make_rule_pack_fixture(tmpdir: str) -> tuple[Path, Path]:
     return fixture_repo, config_path
 
 
+def verify_cli_error_handling() -> bool:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fixture_repo = Path(tmpdir) / "ready-repo"
+        fixture_repo.mkdir()
+        for name in ["README.md", "SPEC.md", "VERIFICATION_PLAN.md", "PRE_RELEASE_CHECKLIST.md"]:
+            (fixture_repo / name).write_text(f"# {name}\n", encoding="utf-8")
+
+        cases = []
+        invalid_json = Path(tmpdir) / "invalid.json"
+        invalid_json.write_text("{not json\n", encoding="utf-8")
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--config",
+                str(invalid_json),
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
+
+        unknown_key = Path(tmpdir) / "unknown-key.json"
+        unknown_key.write_text('{"unknown": []}\n', encoding="utf-8")
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--config",
+                str(unknown_key),
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--redact-pattern",
+                "[",
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--baseline-json",
+                str(Path(tmpdir) / "missing-baseline.json"),
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
+
+        for command in cases:
+            result = run(command)
+            if result.returncode != 2:
+                print("Expected CLI error case to exit 2.")
+                print(result.stdout)
+                print(result.stderr)
+                return False
+            if "Repo preflight error:" not in result.stderr:
+                print("Expected concise CLI error prefix.")
+                print(result.stdout)
+                print(result.stderr)
+                return False
+    return True
+
+
 def copy_for_package_verification(dst: Path) -> None:
     ignored_dirs = {
         ".git",
@@ -109,6 +194,7 @@ def verify_release_package_boundary() -> bool:
         "configs/team-policy.json",
         "buyer-license.txt",
         "docs/report-schema.md",
+        "docs/rule-packs.md",
         "docs/buyer/quickstart.md",
         "docs/buyer/local-cli-setup.md",
         "docs/buyer/github-action-setup.md",
@@ -314,6 +400,9 @@ def main() -> int:
                 print(f"- {code}")
             return 1
 
+        if payload.get("schema_version") != "1.0":
+            print("Expected JSON schema_version 1.0.")
+            return 1
         if payload["decision"] != "BLOCKED" or payload["profile"] != "strict" or "Decision: BLOCKED" not in markdown:
             print("Expected BLOCKED decision.")
             return 1
@@ -484,6 +573,8 @@ def main() -> int:
         print(self_result.stderr)
         return 1
     self_payload = json.loads((ROOT / "VERIFY_SELF_REPORT.json").read_text(encoding="utf-8"))
+    if not require(self_payload.get("schema_version") == "1.0", "Expected schema_version in self-scan report."):
+        return 1
     if not require(self_payload["decision"] == "READY", "Expected READY self-scan decision."):
         return 1
     if not require(self_payload["counts"] == {"blocker": 0, "warning": 0, "info": 0}, "Expected empty self-scan counts."):
@@ -536,6 +627,9 @@ def main() -> int:
         return 1
     docs_payload = json.loads((ROOT / "VERIFY_OPPORTUNITY_BOARD_DOCS_REPORT.json").read_text(encoding="utf-8"))
     if not require(docs_payload["profile"] == "docs", "Expected docs profile in docs report."):
+        return 1
+
+    if not verify_cli_error_handling():
         return 1
 
     if not verify_release_package_boundary():

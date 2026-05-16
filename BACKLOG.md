@@ -25,8 +25,11 @@ python3 -m zipfile -l release/ai-agent-repo-preflight-kit-v0.4.zip
 
 Goal: document the stable JSON fields automation users can rely on.
 
+Status: complete for v0.4 baseline; keep this item open only for future schema changes.
+
 Acceptance criteria:
 
+- Document `schema_version`.
 - Document `profile`, `decision`, `counts`, `findings`, and `baseline_diff`.
 - Mark evidence as optional because privacy controls may remove it.
 - Include one minimal sample finding.

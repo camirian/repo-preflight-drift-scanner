@@ -26,7 +26,7 @@ Repo preflight scanner verification passed.
 - Cache directory is detected.
 - Strict self-scan of the scanner product folder returns READY.
 - Docs-profile scan of the opportunity-board area returns READY with low noise.
-- JSON reports include profile, decision, counts, and findings.
+- JSON reports include schema version, profile, decision, counts, and findings.
 - JSON report schema documentation exists.
 - Composite GitHub Action metadata exists.
 - Action shell entrypoint runs locally in report-only mode and writes Markdown/JSON reports.

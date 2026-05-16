@@ -8,6 +8,7 @@ The report is a deterministic preflight output for release-discipline signals. I
 
 ```json
 {
+  "schema_version": "1.0",
   "repo": ".",
   "profile": "public-export",
   "decision": "READY",
@@ -28,6 +29,7 @@ The report is a deterministic preflight output for release-discipline signals. I
 
 Fields:
 
+- `schema_version`: string. JSON report schema version for automation consumers.
 - `repo`: string. The repository path passed to `--repo`.
 - `profile`: string. The selected profile, such as `strict`, `docs`, or `public-export`.
 - `decision`: string. `READY` when no blocker findings are present, otherwise `BLOCKED`.
@@ -108,5 +110,6 @@ Baseline matching uses finding content after report privacy options are applied.
 ## Consumer notes
 
 - Treat unknown future fields as additive.
+- Use `schema_version` before relying on report structure in automation.
 - Do not treat `READY` as proof that a repository is secure, compliant, correct, or ready to ship.
 - Use `decision` for coarse gating and `counts` plus `findings[*].code` for reporting or dashboards.

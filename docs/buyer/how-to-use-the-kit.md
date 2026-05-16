@@ -46,6 +46,10 @@ python3 repo_preflight.py --repo . --profile public-export --paranoid
 - HTML: shareable local report.
 - SARIF: code-scanning compatible format.
 
+## Rule packs
+
+Use JSON rule packs with `--config` to add team-specific terms, generated directories, exclusions, and required process-file labels. See [rule packs](../rule-packs.md) for supported keys and merge behavior.
+
 ## Baseline diff
 
 After a known report is saved, compare a future run against it:

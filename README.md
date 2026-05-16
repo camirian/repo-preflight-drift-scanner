@@ -94,6 +94,8 @@ Rule packs are JSON files passed with `--config`.
 python3 repo_preflight.py --repo . --config configs/founder-strict.json
 ```
 
+See [docs/rule-packs.md](docs/rule-packs.md) for supported keys, merge behavior, and a compact config example.
+
 Included examples:
 
 - [configs/founder-strict.json](configs/founder-strict.json)
