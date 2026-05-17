@@ -75,7 +75,7 @@ with ZipFile(zip_path, "w", ZIP_DEFLATED) as zf:
             archive_name = str(path.relative_to(root.parent))
             info = ZipInfo(archive_name, fixed_timestamp)
             info.compress_type = ZIP_DEFLATED
-            mode = 0o755 if path.stat().st_mode & 0o111 else 0o644
+            mode = 0o755 if path.suffix == ".sh" or path.stat().st_mode & 0o111 else 0o644
             info.external_attr = mode << 16
             zf.writestr(info, path.read_bytes())
 print(zip_path)
