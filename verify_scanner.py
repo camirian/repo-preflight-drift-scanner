@@ -113,6 +113,86 @@ def verify_cli_error_handling() -> bool:
                 "VERIFY_ERROR_REPORT.json",
             ]
         )
+        bad_list = Path(tmpdir) / "bad-list.json"
+        bad_list.write_text('{"risky_claims": "not-a-list"}\n', encoding="utf-8")
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--config",
+                str(bad_list),
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
+        bad_required = Path(tmpdir) / "bad-required.json"
+        bad_required.write_text('{"required_process_files": []}\n', encoding="utf-8")
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--config",
+                str(bad_required),
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
+        empty_term = Path(tmpdir) / "empty-term.json"
+        empty_term.write_text('{"risky_claims": [""]}\n', encoding="utf-8")
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--config",
+                str(empty_term),
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
+        empty_label = Path(tmpdir) / "empty-label.json"
+        empty_label.write_text('{"required_process_files": {"": ["README.md"]}}\n', encoding="utf-8")
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--config",
+                str(empty_label),
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
+        empty_candidates = Path(tmpdir) / "empty-candidates.json"
+        empty_candidates.write_text('{"required_process_files": {"README": []}}\n', encoding="utf-8")
+        cases.append(
+            [
+                sys.executable,
+                "repo_preflight.py",
+                "--repo",
+                str(fixture_repo),
+                "--config",
+                str(empty_candidates),
+                "--out-md",
+                "VERIFY_ERROR_REPORT.md",
+                "--out-json",
+                "VERIFY_ERROR_REPORT.json",
+            ]
+        )
         cases.append(
             [
                 sys.executable,
@@ -195,6 +275,7 @@ def verify_release_package_boundary() -> bool:
         "buyer-license.txt",
         "docs/report-schema.md",
         "docs/rule-packs.md",
+        "docs/sarif-output.md",
         "docs/buyer/quickstart.md",
         "docs/buyer/local-cli-setup.md",
         "docs/buyer/github-action-setup.md",
@@ -457,6 +538,47 @@ def main() -> int:
         action_payload = json.loads((ROOT / "VERIFY_ACTION_REPORT.json").read_text(encoding="utf-8"))
         if not require(action_payload["decision"] == "BLOCKED", "Expected action-style fixture scan to produce BLOCKED report."):
             return 1
+
+        local_action_dir = Path(tmpdir) / "local-action-cwd"
+        local_action_dir.mkdir()
+        local_action_env = os.environ.copy()
+        local_action_env.pop("GITHUB_ACTION_PATH", None)
+        local_action_env.update(
+            {
+                "INPUT_REPO": str(fixture_repo),
+                "INPUT_OUT_MD": str(ROOT / "VERIFY_LOCAL_ACTION_REPORT.md"),
+                "INPUT_OUT_JSON": str(ROOT / "VERIFY_LOCAL_ACTION_REPORT.json"),
+                "INPUT_OUT_HTML": str(ROOT / "VERIFY_LOCAL_ACTION_REPORT.html"),
+                "INPUT_OUT_SARIF": str(ROOT / "VERIFY_LOCAL_ACTION_REPORT.sarif"),
+                "INPUT_INCLUDE_FIXTURES": "true",
+                "INPUT_GITHUB_ANNOTATIONS": "false",
+                "INPUT_FAIL_ON_BLOCKERS": "false",
+            }
+        )
+        local_action_result = subprocess.run(
+            ["bash", str(ROOT / "scripts/action_entrypoint.sh")],
+            cwd=local_action_dir,
+            check=False,
+            capture_output=True,
+            text=True,
+            env=local_action_env,
+        )
+        if local_action_result.returncode != 0:
+            print("Expected local action entrypoint without GITHUB_ACTION_PATH to exit 0 in report-only mode.")
+            print(local_action_result.stdout)
+            print(local_action_result.stderr)
+            return 1
+        local_action_payload = json.loads((ROOT / "VERIFY_LOCAL_ACTION_REPORT.json").read_text(encoding="utf-8"))
+        if not require(local_action_payload["decision"] == "BLOCKED", "Expected local action entrypoint fixture scan to block."):
+            return 1
+        for path in [
+            ROOT / "VERIFY_LOCAL_ACTION_REPORT.md",
+            ROOT / "VERIFY_LOCAL_ACTION_REPORT.json",
+            ROOT / "VERIFY_LOCAL_ACTION_REPORT.html",
+            ROOT / "VERIFY_LOCAL_ACTION_REPORT.sarif",
+        ]:
+            if not require(path.is_file(), f"Expected local action report output: {path.name}"):
+                return 1
 
         baseline_result = run(
             [

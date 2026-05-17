@@ -36,6 +36,7 @@ copy_if_present configs configs
 copy_if_present examples examples
 copy_if_present docs/report-schema.md docs/report-schema.md
 copy_if_present docs/rule-packs.md docs/rule-packs.md
+copy_if_present docs/sarif-output.md docs/sarif-output.md
 copy_if_present docs/buyer docs/buyer
 copy_if_present buyer-license.txt buyer-license.txt
 

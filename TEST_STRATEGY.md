@@ -11,6 +11,7 @@ Status: current verification strategy with expansion path
 - Prove the composite Action wrapper follows CLI behavior.
 - Prove privacy controls, baseline diffing, docs profile, and Python compilation remain intact.
 - Prove JSON reports include a schema version for automation consumers.
+- Prove SARIF output remains compatible with documented level and rule mapping.
 - Prove common CLI input errors fail with concise user-facing messages.
 
 ## Current Automated Verification

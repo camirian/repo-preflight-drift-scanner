@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set +e
 
+action_path="${GITHUB_ACTION_PATH:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 repo="${INPUT_REPO:-.}"
 profile="${INPUT_PROFILE:-strict}"
 out_md="${INPUT_OUT_MD:-REPO_PREFLIGHT_REPORT.md}"
@@ -63,7 +64,7 @@ if [ -n "$redact_pattern" ]; then
   args+=(--redact-pattern "$redact_pattern")
 fi
 
-python3 "$GITHUB_ACTION_PATH/repo_preflight.py" "${args[@]}"
+python3 "$action_path/repo_preflight.py" "${args[@]}"
 status=$?
 
 echo "Markdown report: $out_md"

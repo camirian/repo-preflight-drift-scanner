@@ -400,6 +400,8 @@ def list_value(raw: object, key: str) -> list[str]:
         return []
     if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
         raise ValueError(f"Config key {key!r} must be a list of strings")
+    if any(not item.strip() for item in raw):
+        raise ValueError(f"Config key {key!r} must not contain empty strings")
     return raw
 
 
@@ -435,6 +437,10 @@ def load_config(paths: list[Path]) -> ScanConfig:
         for label, candidates in required_payload.items():
             if not isinstance(label, str):
                 raise ValueError(f"Required process file label in {path} must be a string")
+            if not label.strip():
+                raise ValueError(f"Required process file label in {path} must not be empty")
+            if candidates == []:
+                raise ValueError(f"Required process file {label!r} in {path} must list at least one candidate")
             required[label] = list_value(candidates, f"required_process_files.{label}")
 
     return ScanConfig(
