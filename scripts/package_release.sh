@@ -65,12 +65,18 @@ find "${STAGE_DIR}" \
 
 python3 - <<PY
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 root = Path(r"${STAGE_DIR}")
 zip_path = Path(r"${ZIP_PATH}")
+fixed_timestamp = (1980, 1, 1, 0, 0, 0)
 with ZipFile(zip_path, "w", ZIP_DEFLATED) as zf:
     for path in sorted(root.rglob("*")):
         if path.is_file():
-            zf.write(path, path.relative_to(root.parent))
+            archive_name = str(path.relative_to(root.parent))
+            info = ZipInfo(archive_name, fixed_timestamp)
+            info.compress_type = ZIP_DEFLATED
+            mode = 0o755 if path.stat().st_mode & 0o111 else 0o644
+            info.external_attr = mode << 16
+            zf.writestr(info, path.read_bytes())
 print(zip_path)
 PY

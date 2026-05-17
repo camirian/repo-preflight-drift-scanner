@@ -101,4 +101,4 @@ runs:
         INPUT_PATH_MODE: ${{ inputs.path-mode }}
         INPUT_REDACT_PATTERN: ${{ inputs.redact-pattern }}
         INPUT_FAIL_ON_BLOCKERS: ${{ inputs.fail-on-blockers }}
-      run: "$GITHUB_ACTION_PATH/scripts/action_entrypoint.sh"
+      run: bash "$GITHUB_ACTION_PATH/scripts/action_entrypoint.sh"

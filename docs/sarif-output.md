@@ -17,10 +17,13 @@ SARIF output is intended for CI review surfaces, artifact upload, and code-scann
 - The SARIF payload uses version `2.1.0`.
 - The scanner emits one SARIF run named `Repo Preflight Drift Scanner`.
 - Each scanner finding becomes one SARIF result.
-- Each finding `code` maps to the SARIF `ruleId`.
-- SARIF rules are grouped by finding `code`.
-- Finding messages map to SARIF result messages.
-- Finding line numbers map to `region.startLine` when a line is available.
+- Each finding `code` maps to the SARIF result `ruleId`.
+- The SARIF rule list contains one rule per finding `code`; each rule uses the finding code for both `id` and `name`.
+- Finding messages map to `result.message.text`.
+- Finding paths map to `result.locations[].physicalLocation.artifactLocation.uri` after report path privacy options are applied.
+- Finding line numbers map to `result.locations[].physicalLocation.region.startLine` when a line is available.
+
+Use `ruleId` as the scanner finding-code field when reviewing SARIF results. For example, a scanner finding with code `missing_process_file` is emitted as a SARIF result with `ruleId: "missing_process_file"` and is grouped under the SARIF rule with `id: "missing_process_file"`.
 
 ## Level Mapping
 
@@ -45,7 +48,16 @@ Result location paths reflect the selected path privacy behavior:
 - `--path-mode hash` writes hashed path labels.
 - `--paranoid` uses basename paths unless another `--path-mode` is explicitly selected.
 
-Evidence snippets are not included in current SARIF results. If reports may leave a private workspace, use `--paranoid` and review the generated SARIF artifact before uploading or sharing it.
+Evidence snippets are not included in current SARIF results.
+
+Privacy limits:
+
+- SARIF result locations use the same post-privacy finding paths as the other report formats, but path privacy does not prove that an artifact is safe to publish.
+- The SARIF run includes `originalUriBaseIds.ROOTPATH` derived from the scanned repository root. That can expose the local absolute repository path even when result locations use basename or hashed labels.
+- Hashed path labels reduce readable path detail; they are not a security boundary or anonymization guarantee.
+- Finding messages and rule IDs can still reveal project structure, workflow names, or release-process details.
+
+If reports may leave a private workspace, use `--paranoid`, consider `--path-mode hash` when basename paths are still too revealing, and review the generated SARIF artifact before uploading or sharing it.
 
 ## Consumer Notes
 

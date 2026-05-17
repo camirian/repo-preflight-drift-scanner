@@ -42,6 +42,7 @@ Acceptance criteria:
 - Rule-pack behavior is documented through a minimal example.
 - `docs` profile remains low-noise for template-heavy documentation.
 - `public-export` profile remains conservative for public repo and package checks.
+- SARIF output maps cleanly to deterministic finding codes without over-claiming precision.
 
 Verification commands:
 
@@ -70,7 +71,7 @@ GITHUB_ACTION_PATH="$PWD" INPUT_REPO="examples/sample-repo" INPUT_INCLUDE_FIXTUR
 
 ## Post-v0.4 Candidates
 
-- Add focused fixtures for each profile and output format.
+- Add focused fixtures for new profiles and output formats as they are introduced.
 - Add schema notes for JSON report consumers.
 - Add a small compatibility matrix for Python versions used in CI.
 - Extend buyer-package smoke tests as new buyer workflows are added.

@@ -7,6 +7,7 @@ Status: current verification strategy with expansion path
 - Prove the scanner catches known release-discipline blockers in a synthetic repo.
 - Prove the product repo passes strict and public-export self-scans.
 - Prove reports are written in the expected formats.
+- Prove focused profile fixtures keep `docs` lower-noise and `public-export` conservative.
 - Prove secret-bearing fixture content is not leaked into reports.
 - Prove the composite Action wrapper follows CLI behavior.
 - Prove privacy controls, baseline diffing, docs profile, and Python compilation remain intact.
@@ -29,6 +30,7 @@ The verifier covers:
 
 - Synthetic blocked fixture scan.
 - Markdown, JSON, HTML, and SARIF report generation.
+- Focused output compatibility across JSON, Markdown, HTML, and SARIF for profile fixtures.
 - Required finding codes for missing process file, secret-bearing filename, unchecked release gate, risky public claim, generated artifact directory, and drift marker.
 - GitHub annotation output.
 - Action entrypoint report-only behavior and fail-on-blockers behavior.
@@ -39,7 +41,7 @@ The verifier covers:
 - Docs profile READY decision with `configs/founder-strict.json`.
 - Rule-pack behavior for custom required files, terms, generated dirs, secret-bearing filenames, and exclusions.
 - CLI error handling for invalid config JSON, unknown config keys, invalid redaction regex, and missing baseline files.
-- Buyer package boundary and extracted-artifact smoke checks.
+- Buyer package boundary, reproducible ZIP bytes, and extracted-artifact smoke checks.
 - `py_compile` for `repo_preflight.py` and `verify_scanner.py`.
 
 ## Manual Smoke Checks
@@ -87,5 +89,5 @@ Then inspect the generated zip manifest and extracted artifact before upload. Th
 
 ## Expansion Path
 
-- Add dedicated fixtures for each profile.
 - Add JSON schema compatibility checks for report consumers.
+- Add more focused fixtures when new profiles or output formats are introduced.

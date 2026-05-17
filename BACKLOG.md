@@ -6,9 +6,12 @@ Status: prioritized planning backlog
 
 Goal: verify the generated package from an extracted directory, not only from the source tree.
 
+Status: complete for v0.4 baseline; verifier now checks extracted package behavior and reproducible ZIP bytes.
+
 Acceptance criteria:
 
 - Packaging command creates the v0.4 zip.
+- Repeated package builds produce identical ZIP bytes when package contents are unchanged.
 - Test extracts the zip to a temporary directory.
 - Extracted package runs `python3 verify_scanner.py`.
 - Extracted package runs the sample repo demo and reports expected blockers.
@@ -45,6 +48,8 @@ python3 verify_scanner.py
 
 Goal: make config behavior safer to change.
 
+Status: complete for v0.4 baseline; verifier covers custom rule-pack behavior and built-in profile behavior.
+
 Acceptance criteria:
 
 - Add a synthetic fixture or verifier section for custom risky claims.
@@ -79,6 +84,8 @@ python3 repo_preflight.py --repo . --profile public-export --paranoid --out-md V
 ## P2: SARIF Mapping Review
 
 Goal: ensure SARIF output stays useful without over-claiming precision.
+
+Status: complete for v0.4 baseline; verifier covers SARIF result/code compatibility and docs describe mapping limits.
 
 Acceptance criteria:
 

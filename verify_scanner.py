@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -70,6 +71,210 @@ def make_rule_pack_fixture(tmpdir: str) -> tuple[Path, Path]:
         encoding="utf-8",
     )
     return fixture_repo, config_path
+
+
+def make_docs_heavy_fixture(tmpdir: str) -> Path:
+    fixture_repo = Path(tmpdir) / "docs-heavy-repo"
+    fixture_repo.mkdir()
+    (fixture_repo / "README.md").write_text(
+        "# Docs Heavy Fixture\n\n"
+        "This project is production " "ready and replaces human " "review.\n"
+        "TO" "DO: replace " "this with final release language.\n",
+        encoding="utf-8",
+    )
+    (fixture_repo / "SPEC.md").write_text("# Spec\n\nPlace" "holder architecture notes.\n", encoding="utf-8")
+    (fixture_repo / "VERIFICATION_PLAN.md").write_text(
+        "# Verification Plan\n\n- [" " ] Verify report outputs.\n",
+        encoding="utf-8",
+    )
+    (fixture_repo / "PRE_RELEASE_CHECKLIST.md").write_text(
+        "# Pre-Release Checklist\n\n- [" " ] Human release review completed.\n",
+        encoding="utf-8",
+    )
+    (fixture_repo / "docs").mkdir()
+    (fixture_repo / "docs" / "GUIDE.md").write_text(
+        "# Guide\n\nFIX" "ME: T" "BD after launch.\n",
+        encoding="utf-8",
+    )
+    (fixture_repo / "dist").mkdir()
+    (fixture_repo / "dist" / "generated.txt").write_text("generated\n", encoding="utf-8")
+    return fixture_repo
+
+
+def make_public_export_fixture(tmpdir: str) -> Path:
+    fixture_repo = Path(tmpdir) / "public-export-repo"
+    fixture_repo.mkdir()
+    for name in ["README.md", "SPEC.md", "VERIFICATION_PLAN.md", "PRE_RELEASE_CHECKLIST.md"]:
+        (fixture_repo / name).write_text(f"# {name}\n\nRelease gate complete.\n", encoding="utf-8")
+    (fixture_repo / "PRODUCT_LISTING.md").write_text(
+        "# Product Listing\n\nBuyer-facing listing draft.\n",
+        encoding="utf-8",
+    )
+    (fixture_repo / "private-notes").mkdir()
+    (fixture_repo / "private-notes" / "notes.md").write_text(
+        "# Notes\n\nInternal export " "control reminder.\n",
+        encoding="utf-8",
+    )
+    (fixture_repo / "src.py").write_text(
+        'TOKEN_EXAMPLE = "ghp_' "abcdefghijklmnopqrstuvwx" '"\n',
+        encoding="utf-8",
+    )
+    return fixture_repo
+
+
+def run_profile_scan(repo: Path, profile: str, tmpdir: str, stem: str) -> tuple[subprocess.CompletedProcess[str], dict]:
+    out_md = Path(tmpdir) / f"{stem}.md"
+    out_json = Path(tmpdir) / f"{stem}.json"
+    out_html = Path(tmpdir) / f"{stem}.html"
+    out_sarif = Path(tmpdir) / f"{stem}.sarif"
+    result = run(
+        [
+            sys.executable,
+            "repo_preflight.py",
+            "--repo",
+            str(repo),
+            "--profile",
+            profile,
+            "--out-md",
+            str(out_md),
+            "--out-json",
+            str(out_json),
+            "--out-html",
+            str(out_html),
+            "--out-sarif",
+            str(out_sarif),
+        ]
+    )
+    payload = json.loads(out_json.read_text(encoding="utf-8"))
+    return result, {
+        "json": payload,
+        "markdown": out_md.read_text(encoding="utf-8"),
+        "html": out_html.read_text(encoding="utf-8"),
+        "sarif": json.loads(out_sarif.read_text(encoding="utf-8")),
+    }
+
+
+def require_output_format_compatibility(reports: dict, profile: str) -> bool:
+    payload = reports["json"]
+    markdown = reports["markdown"]
+    html_report = reports["html"]
+    sarif_payload = reports["sarif"]
+    findings = payload["findings"]
+    counts = payload["counts"]
+    sarif_results = sarif_payload["runs"][0]["results"]
+
+    checks = [
+        (payload.get("schema_version") == "1.0", "Expected JSON schema_version 1.0."),
+        (payload["profile"] == profile, f"Expected JSON profile {profile}."),
+        (f"Profile: `{profile}`" in markdown, f"Expected Markdown profile {profile}."),
+        (f"<code>{profile}</code>" in html_report, f"Expected HTML profile {profile}."),
+        (f"Decision: {payload['decision']}" in markdown, "Expected Markdown decision to match JSON."),
+        (f"<p><strong>Decision:</strong> {payload['decision']}</p>" in html_report, "Expected HTML decision to match JSON."),
+        (f"- Blockers: {counts['blocker']}" in markdown, "Expected Markdown blocker count to match JSON."),
+        (f"- Warnings: {counts['warning']}" in markdown, "Expected Markdown warning count to match JSON."),
+        (f"- Info: {counts['info']}" in markdown, "Expected Markdown info count to match JSON."),
+        (len(sarif_results) == len(findings), "Expected SARIF result count to match JSON findings."),
+    ]
+    for condition, message in checks:
+        if not require(condition, message):
+            return False
+
+    json_codes = {finding["code"] for finding in findings}
+    sarif_codes = {result["ruleId"] for result in sarif_results}
+    if not require(sarif_codes == json_codes, "Expected SARIF rule IDs to match JSON finding codes."):
+        return False
+    return True
+
+
+def verify_profile_and_output_coverage() -> bool:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docs_heavy_repo = make_docs_heavy_fixture(tmpdir)
+        strict_result, strict_reports = run_profile_scan(docs_heavy_repo, "strict", tmpdir, "strict-docs-heavy")
+        docs_result, docs_reports = run_profile_scan(docs_heavy_repo, "docs", tmpdir, "docs-docs-heavy")
+
+        if strict_result.returncode == 0:
+            print("Expected strict docs-heavy fixture scan to find blockers.")
+            print(strict_result.stdout)
+            print(strict_result.stderr)
+            return False
+        if docs_result.returncode != 0:
+            print("Expected docs profile docs-heavy fixture scan to pass.")
+            print(docs_result.stdout)
+            print(docs_result.stderr)
+            return False
+        if not require_output_format_compatibility(strict_reports, "strict"):
+            return False
+        if not require_output_format_compatibility(docs_reports, "docs"):
+            return False
+
+        strict_counts = strict_reports["json"]["counts"]
+        docs_counts = docs_reports["json"]["counts"]
+        strict_total = sum(strict_counts.values())
+        docs_total = sum(docs_counts.values())
+        if not require(docs_total < strict_total, "Expected docs profile to stay lower-noise than strict."):
+            return False
+        if not require(docs_counts == {"blocker": 0, "warning": 0, "info": 0}, "Expected docs profile to suppress docs-heavy noise."):
+            return False
+        strict_codes = {finding["code"] for finding in strict_reports["json"]["findings"]}
+        expected_strict_codes = {
+            "risky_public_claim",
+            "drift_marker",
+            "unchecked_release_gate",
+            "generated_artifact_dir",
+        }
+        missing_strict_codes = sorted(expected_strict_codes - strict_codes)
+        if missing_strict_codes:
+            print("Missing expected strict docs-heavy finding codes:")
+            for code in missing_strict_codes:
+                print(f"- {code}")
+            return False
+
+        public_export_repo = make_public_export_fixture(tmpdir)
+        strict_clean_result, strict_clean_reports = run_profile_scan(
+            public_export_repo,
+            "strict",
+            tmpdir,
+            "strict-public-export",
+        )
+        public_export_result, public_export_reports = run_profile_scan(
+            public_export_repo,
+            "public-export",
+            tmpdir,
+            "public-export",
+        )
+        if strict_clean_result.returncode != 0:
+            print("Expected strict public-export fixture baseline to pass.")
+            print(strict_clean_result.stdout)
+            print(strict_clean_result.stderr)
+            return False
+        if public_export_result.returncode == 0:
+            print("Expected public-export fixture scan to remain conservative and block.")
+            print(public_export_result.stdout)
+            print(public_export_result.stderr)
+            return False
+        if not require_output_format_compatibility(strict_clean_reports, "strict"):
+            return False
+        if not require_output_format_compatibility(public_export_reports, "public-export"):
+            return False
+
+        public_export_codes = {finding["code"] for finding in public_export_reports["json"]["findings"]}
+        expected_public_export_codes = {
+            "private_publication_surface",
+            "public_sensitive_term",
+            "github_token_literal",
+        }
+        missing_public_export_codes = sorted(expected_public_export_codes - public_export_codes)
+        if missing_public_export_codes:
+            print("Missing expected public-export conservative finding codes:")
+            for code in missing_public_export_codes:
+                print(f"- {code}")
+            return False
+        if not require(
+            sum(public_export_reports["json"]["counts"].values()) > sum(strict_clean_reports["json"]["counts"].values()),
+            "Expected public-export profile to be more conservative than strict on public-export fixture.",
+        ):
+            return False
+    return True
 
 
 def verify_cli_error_handling() -> bool:
@@ -315,9 +520,47 @@ def verify_release_package_boundary() -> bool:
         zip_path = package_root / "release" / f"{package_name}.zip"
         if not require(zip_path.is_file(), "Expected buyer ZIP to be created."):
             return False
+        first_digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+
+        repeat_package_result = subprocess.run(
+            ["bash", "scripts/package_release.sh", version],
+            cwd=package_root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if repeat_package_result.returncode != 0:
+            print("Expected repeated package script run to build buyer ZIP.")
+            print(repeat_package_result.stdout)
+            print(repeat_package_result.stderr)
+            return False
+        second_digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+        if not require(first_digest == second_digest, "Expected buyer ZIP builds to be reproducible."):
+            return False
 
         with ZipFile(zip_path) as zf:
             manifest = sorted(name for name in zf.namelist() if not name.endswith("/"))
+            prefix = f"{package_name}/"
+            non_deterministic_timestamps = sorted(
+                info.filename
+                for info in zf.infolist()
+                if not info.is_dir() and info.date_time != (1980, 1, 1, 0, 0, 0)
+            )
+            if non_deterministic_timestamps:
+                print("Buyer ZIP files have non-deterministic timestamps:")
+                for path in non_deterministic_timestamps:
+                    print(f"- {path}")
+                return False
+            executable_members = {
+                PurePosixPath(info.filename).as_posix().removeprefix(prefix)
+                for info in zf.infolist()
+                if not info.is_dir() and ((info.external_attr >> 16) & 0o111)
+            }
+            if not require(
+                "scripts/action_entrypoint.sh" in executable_members,
+                "Expected packaged action entrypoint to preserve executable mode.",
+            ):
+                return False
 
             for name in manifest:
                 parts = PurePosixPath(name).parts
@@ -328,7 +571,6 @@ def verify_release_package_boundary() -> bool:
                     print(f"Unexpected .git content in buyer ZIP: {name}")
                     return False
 
-            prefix = f"{package_name}/"
             if not require(
                 all(name.startswith(prefix) for name in manifest),
                 "Expected all ZIP members under package directory.",
@@ -420,6 +662,38 @@ def verify_release_package_boundary() -> bool:
         if not require(demo_payload["decision"] == "BLOCKED", "Expected extracted CLI demo report to be BLOCKED."):
             return False
 
+        extracted_action_env = os.environ.copy()
+        extracted_action_env.update(
+            {
+                "GITHUB_ACTION_PATH": str(extracted_package),
+                "INPUT_REPO": "examples/sample-repo",
+                "INPUT_OUT_MD": "EXTRACTED_ACTION_REPORT.md",
+                "INPUT_OUT_JSON": "EXTRACTED_ACTION_REPORT.json",
+                "INPUT_INCLUDE_FIXTURES": "true",
+                "INPUT_GITHUB_ANNOTATIONS": "false",
+                "INPUT_FAIL_ON_BLOCKERS": "false",
+            }
+        )
+        extracted_action_result = subprocess.run(
+            ["bash", str(extracted_package / "scripts/action_entrypoint.sh")],
+            cwd=extracted_package,
+            check=False,
+            capture_output=True,
+            text=True,
+            env=extracted_action_env,
+        )
+        if extracted_action_result.returncode != 0:
+            print("Expected extracted action entrypoint to run through bash in report-only mode.")
+            print(extracted_action_result.stdout)
+            print(extracted_action_result.stderr)
+            return False
+        extracted_action_payload = json.loads((extracted_package / "EXTRACTED_ACTION_REPORT.json").read_text(encoding="utf-8"))
+        if not require(
+            extracted_action_payload["decision"] == "BLOCKED",
+            "Expected extracted action entrypoint report to be BLOCKED.",
+        ):
+            return False
+
     return True
 
 
@@ -428,6 +702,8 @@ def main() -> int:
     if not require("using: composite" in action_metadata, "Expected composite action metadata."):
         return 1
     if not require("scripts/action_entrypoint.sh" in action_metadata, "Expected action to use tested shell entrypoint."):
+        return 1
+    if not require('run: bash "$GITHUB_ACTION_PATH/scripts/action_entrypoint.sh"' in action_metadata, "Expected action to invoke entrypoint through bash."):
         return 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -781,6 +1057,9 @@ def main() -> int:
         return 1
     docs_payload = json.loads((ROOT / "VERIFY_OPPORTUNITY_BOARD_DOCS_REPORT.json").read_text(encoding="utf-8"))
     if not require(docs_payload["profile"] == "docs", "Expected docs profile in docs report."):
+        return 1
+
+    if not verify_profile_and_output_coverage():
         return 1
 
     if not verify_cli_error_handling():
