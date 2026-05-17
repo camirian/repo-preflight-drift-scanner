@@ -13,6 +13,7 @@ Status: current verification strategy with expansion path
 - Prove JSON reports include a schema version for automation consumers.
 - Prove SARIF output remains compatible with documented level and rule mapping.
 - Prove common CLI input errors fail with concise user-facing messages.
+- Prove the verifier passes across the supported Python range, Python 3.10 through 3.13.
 
 ## Current Automated Verification
 
@@ -22,13 +23,15 @@ Primary command:
 python3 verify_scanner.py
 ```
 
+CI runs the verifier against Python 3.10, 3.11, 3.12, and 3.13.
+
 The verifier covers:
 
 - Synthetic blocked fixture scan.
 - Markdown, JSON, HTML, and SARIF report generation.
 - Required finding codes for missing process file, secret-bearing filename, unchecked release gate, risky public claim, generated artifact directory, and drift marker.
 - GitHub annotation output.
-- Action entrypoint report-only behavior.
+- Action entrypoint report-only behavior and fail-on-blockers behavior.
 - Baseline diff with no new findings against an identical baseline.
 - Paranoid mode path and evidence suppression.
 - Strict self-scan READY decision.
@@ -86,5 +89,3 @@ Then inspect the generated zip manifest and extracted artifact before upload. Th
 
 - Add dedicated fixtures for each profile.
 - Add JSON schema compatibility checks for report consumers.
-- Add package extraction smoke automation to prevent source-tree-only packaging errors.
-- Add CI matrix coverage for supported Python versions if compatibility becomes buyer-facing.

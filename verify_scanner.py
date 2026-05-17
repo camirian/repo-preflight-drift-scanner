@@ -539,6 +539,38 @@ def main() -> int:
         if not require(action_payload["decision"] == "BLOCKED", "Expected action-style fixture scan to produce BLOCKED report."):
             return 1
 
+        fail_action_env = os.environ.copy()
+        fail_action_env.update(
+            {
+                "GITHUB_ACTION_PATH": str(ROOT),
+                "INPUT_REPO": str(fixture_repo),
+                "INPUT_OUT_MD": str(Path(tmpdir) / "VERIFY_ACTION_FAIL_REPORT.md"),
+                "INPUT_OUT_JSON": str(Path(tmpdir) / "VERIFY_ACTION_FAIL_REPORT.json"),
+                "INPUT_INCLUDE_FIXTURES": "true",
+                "INPUT_GITHUB_ANNOTATIONS": "false",
+                "INPUT_FAIL_ON_BLOCKERS": "true",
+            }
+        )
+        fail_action_result = subprocess.run(
+            ["bash", "scripts/action_entrypoint.sh"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            env=fail_action_env,
+        )
+        if fail_action_result.returncode == 0:
+            print("Expected action entrypoint fail-on-blockers mode to exit non-zero.")
+            print(fail_action_result.stdout)
+            print(fail_action_result.stderr)
+            return 1
+        fail_action_payload = json.loads((Path(tmpdir) / "VERIFY_ACTION_FAIL_REPORT.json").read_text(encoding="utf-8"))
+        if not require(
+            fail_action_payload["decision"] == "BLOCKED",
+            "Expected fail-on-blockers action scan to produce BLOCKED report.",
+        ):
+            return 1
+
         local_action_dir = Path(tmpdir) / "local-action-cwd"
         local_action_dir.mkdir()
         local_action_env = os.environ.copy()

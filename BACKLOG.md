@@ -62,6 +62,8 @@ python3 verify_scanner.py
 
 Goal: make profile choice obvious for buyers and Action users.
 
+Status: complete for v0.4 baseline; revisit only if profiles or Action inputs change.
+
 Acceptance criteria:
 
 - Explain when to use `strict`, `docs`, and `public-export`.
@@ -95,11 +97,31 @@ python3 verify_scanner.py
 
 Goal: document and test supported Python versions once support policy is buyer-facing.
 
+Status: complete for Python 3.10 through 3.13.
+
 Acceptance criteria:
 
 - State the supported Python version range.
 - CI runs the verifier on each supported version.
 - Buyer docs mention the same range.
+
+Verification command:
+
+```bash
+python3 verify_scanner.py
+```
+
+## P3: Action Fail-On-Blockers Regression Coverage
+
+Goal: ensure the composite Action keeps matching CLI blocking behavior.
+
+Status: complete for v0.4 baseline.
+
+Acceptance criteria:
+
+- Report-only Action mode exits zero while still producing a BLOCKED report for the fixture.
+- Fail-on-blockers Action mode exits non-zero for the same blocked fixture.
+- Generated JSON report is still written in both modes.
 
 Verification command:
 

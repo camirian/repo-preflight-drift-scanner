@@ -2,6 +2,12 @@
 
 Rule packs are JSON config files passed with `--config`. They let a team add project-specific release-discipline checks without changing scanner code.
 
+Use the profile that matches the scan intent, then add the rule pack:
+
+- `strict`: normal release-discipline checks before merge, demo, handoff, or release artifact.
+- `docs`: low-noise documentation scans where templates, examples, unchecked boxes, and old reports would otherwise distract from doc review.
+- `public-export`: public-publication checks before publishing a repository, package, Action, template, or downloadable product.
+
 ```bash
 python3 repo_preflight.py --repo . --profile strict --config configs/team-policy.json
 ```
@@ -62,12 +68,42 @@ Use a local scan to confirm a rule pack parses and produces the expected finding
 python3 repo_preflight.py --repo . --profile strict --config configs/team-policy.json
 ```
 
+For a documentation-heavy repo or docs-only package area, use the low-noise docs profile:
+
+```bash
+python3 repo_preflight.py --repo . --profile docs --config configs/team-policy.json
+```
+
 For a public-export check, keep the normal privacy controls:
 
 ```bash
 python3 repo_preflight.py --repo . --profile public-export --paranoid --config configs/team-policy.json
 ```
 
+In GitHub Actions, pass the same profile intent and one rule-pack path through `config`:
+
+```yaml
+with:
+  repo: "."
+  profile: strict
+  config: configs/team-policy.json
+```
+
+```yaml
+with:
+  repo: "."
+  profile: docs
+  config: configs/team-policy.json
+```
+
+```yaml
+with:
+  repo: "."
+  profile: public-export
+  paranoid: true
+  config: configs/team-policy.json
+```
+
 ## Boundary
 
-Rule packs tune deterministic preflight checks. They are not a security policy, compliance policy, vulnerability scanner, or replacement for human review.
+Rule packs tune deterministic preflight checks. They are not a security policy, compliance policy, vulnerability scanner, guarantee of readiness, or replacement for human review.

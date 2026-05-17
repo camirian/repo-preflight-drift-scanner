@@ -42,6 +42,10 @@ Local CLI:
 python3 repo_preflight.py --repo . --profile public-export --paranoid
 ```
 
+## Python Support
+
+The local CLI and verifier support Python 3.10 through 3.13.
+
 ## Install In GitHub Actions
 
 ```yaml
@@ -78,13 +82,40 @@ python3 repo_preflight.py \
 
 Profiles:
 
+- `strict`: normal release-discipline checks before merge, demo, handoff, or release artifact.
+- `docs`: low-noise scans for template-heavy documentation, sample reports, and buyer instructions.
+- `public-export`: checks before publishing a repo, package, Action, template, or downloadable product; use paranoid mode when reports may leave a private workspace.
+
+CLI examples:
+
 ```bash
 python3 repo_preflight.py --repo . --profile strict
 python3 repo_preflight.py --repo . --profile docs
 python3 repo_preflight.py --repo . --profile public-export --paranoid
 ```
 
-Use `strict` for release artifacts. Use `docs` when scanning template-heavy documentation where unchecked boxes, claim examples, and old generated artifacts would create noise. Use `public-export` before publishing a repo, package, Action, or public artifact; it adds checks for private planning paths, tracked report outputs, tracked secret-bearing filenames, high-confidence secret literals, and sensitive public-export terms.
+GitHub Action input examples:
+
+```yaml
+with:
+  repo: "."
+  profile: strict
+```
+
+```yaml
+with:
+  repo: "."
+  profile: docs
+```
+
+```yaml
+with:
+  repo: "."
+  profile: public-export
+  paranoid: true
+```
+
+See [docs/buyer/how-to-use-the-kit.md](docs/buyer/how-to-use-the-kit.md) for profile selection guidance.
 
 ## Rule Packs
 
