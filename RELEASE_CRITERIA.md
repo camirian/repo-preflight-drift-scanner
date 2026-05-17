@@ -2,6 +2,8 @@
 
 Status: release gate baseline for public and buyer-facing work
 
+Current local v0.4 candidate notes and checksum: [docs/releases/v0.4.md](docs/releases/v0.4.md).
+
 ## Release Boundary
 
 A release is ready only when both boundaries pass:
