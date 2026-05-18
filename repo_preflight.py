@@ -202,6 +202,7 @@ SECRET_LITERAL_PATTERNS = {
 }
 
 MAX_TEXT_BYTES = 300_000
+JSON_SCHEMA_VERSION = "1.0"
 CONFIG_LIST_KEYS = {
     "risky_claims",
     "drift_markers",
@@ -253,6 +254,10 @@ def read_text(path: Path) -> str | None:
     if path.stat().st_size > MAX_TEXT_BYTES:
         return None
     return path.read_text(encoding="utf-8", errors="replace")
+
+
+class UserFacingError(Exception):
+    """Error with a concise message suitable for CLI output."""
 
 
 def line_findings(
@@ -395,6 +400,8 @@ def list_value(raw: object, key: str) -> list[str]:
         return []
     if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
         raise ValueError(f"Config key {key!r} must be a list of strings")
+    if any(not item.strip() for item in raw):
+        raise ValueError(f"Config key {key!r} must not contain empty strings")
     return raw
 
 
@@ -430,6 +437,10 @@ def load_config(paths: list[Path]) -> ScanConfig:
         for label, candidates in required_payload.items():
             if not isinstance(label, str):
                 raise ValueError(f"Required process file label in {path} must be a string")
+            if not label.strip():
+                raise ValueError(f"Required process file label in {path} must not be empty")
+            if candidates == []:
+                raise ValueError(f"Required process file {label!r} in {path} must list at least one candidate")
             required[label] = list_value(candidates, f"required_process_files.{label}")
 
     return ScanConfig(
@@ -679,6 +690,48 @@ def diff_against_baseline(findings: list[Finding], baseline_path: Path | None) -
     }
 
 
+def compile_redactors(patterns: list[str]) -> tuple[re.Pattern[str], ...]:
+    redactors = []
+    for pattern in patterns:
+        try:
+            redactors.append(re.compile(pattern))
+        except re.error as exc:
+            raise UserFacingError(f"Invalid --redact-pattern {pattern!r}: {exc}") from exc
+    return tuple(redactors)
+
+
+def run_scan(args: argparse.Namespace) -> int:
+    try:
+        config = load_config(args.config)
+        findings = scan_repo(args.repo, include_fixtures=args.include_fixtures, profile=args.profile, config=config)
+        path_mode = "basename" if args.paranoid and args.path_mode == "relative" else args.path_mode
+        report_options = ReportOptions(
+            no_evidence=args.no_evidence or args.paranoid,
+            max_evidence_chars=args.max_evidence_chars,
+            path_mode=path_mode,
+            redactors=compile_redactors(args.redact_pattern),
+        )
+        report_findings = prepare_findings_for_report(findings, report_options)
+        baseline_diff = diff_against_baseline(report_findings, args.baseline_json) if args.baseline_json else None
+        args.out_md.write_text(render_markdown(args.repo, report_findings, args.profile, baseline_diff), encoding="utf-8")
+        write_json(args.repo, report_findings, args.out_json, args.profile, baseline_diff)
+        if args.out_html:
+            args.out_html.write_text(render_html(args.repo, report_findings, args.profile), encoding="utf-8")
+        if args.out_sarif:
+            write_sarif(args.repo, report_findings, args.out_sarif)
+        if args.github_annotations:
+            emit_github_annotations(report_findings)
+    except (OSError, TypeError, ValueError, json.JSONDecodeError, UserFacingError) as exc:
+        print(f"Repo preflight error: {exc}", file=sys.stderr)
+        return 2
+
+    if decision(findings) == "BLOCKED":
+        print("Repo preflight found blockers.")
+        return 1
+    print("Repo preflight ready.")
+    return 0
+
+
 def render_markdown(
     repo: Path,
     findings: list[Finding],
@@ -862,6 +915,7 @@ def write_json(
 ) -> None:
     counts = finding_counts(findings)
     payload = {
+        "schema_version": JSON_SCHEMA_VERSION,
         "repo": str(repo),
         "profile": profile,
         "decision": decision(findings),
@@ -892,31 +946,7 @@ def main() -> int:
     parser.add_argument("--profile", choices=sorted(PROFILES), default="strict")
     args = parser.parse_args()
 
-    config = load_config(args.config)
-    findings = scan_repo(args.repo, include_fixtures=args.include_fixtures, profile=args.profile, config=config)
-    path_mode = "basename" if args.paranoid and args.path_mode == "relative" else args.path_mode
-    report_options = ReportOptions(
-        no_evidence=args.no_evidence or args.paranoid,
-        max_evidence_chars=args.max_evidence_chars,
-        path_mode=path_mode,
-        redactors=tuple(re.compile(pattern) for pattern in args.redact_pattern),
-    )
-    report_findings = prepare_findings_for_report(findings, report_options)
-    baseline_diff = diff_against_baseline(report_findings, args.baseline_json) if args.baseline_json else None
-    args.out_md.write_text(render_markdown(args.repo, report_findings, args.profile, baseline_diff), encoding="utf-8")
-    write_json(args.repo, report_findings, args.out_json, args.profile, baseline_diff)
-    if args.out_html:
-        args.out_html.write_text(render_html(args.repo, report_findings, args.profile), encoding="utf-8")
-    if args.out_sarif:
-        write_sarif(args.repo, report_findings, args.out_sarif)
-    if args.github_annotations:
-        emit_github_annotations(report_findings)
-
-    if decision(findings) == "BLOCKED":
-        print("Repo preflight found blockers.")
-        return 1
-    print("Repo preflight ready.")
-    return 0
+    return run_scan(args)
 
 
 if __name__ == "__main__":

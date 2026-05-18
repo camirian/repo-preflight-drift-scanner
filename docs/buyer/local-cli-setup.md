@@ -4,7 +4,7 @@ Use the local CLI when you want a private, deterministic scan without granting r
 
 ## Requirements
 
-- Python 3
+- Python 3.10 through 3.13
 - A local copy of the repository you want to scan
 - No API keys
 - No network calls required by the scanner itself

@@ -17,34 +17,59 @@ This kit is for developers and founders who use AI coding agents and need a smal
 
 ### strict
 
-Use this before a merge, demo, handoff, or release artifact.
+Use `strict` for normal release-discipline checks before a merge, demo, handoff, or internal release artifact. It checks process files, unchecked release gates, risky public claims, generated artifacts, and AI/process drift markers. It does not add the extra public-publication checks from `public-export`.
 
 ```bash
 python3 repo_preflight.py --repo . --profile strict
 ```
 
+```yaml
+with:
+  repo: "."
+  profile: strict
+```
+
 ### docs
 
-Use this when scanning template-heavy documentation where unchecked boxes, sample claims, and old generated reports would create too much noise.
+Use `docs` when scanning template-heavy documentation, sample reports, or buyer instructions where unchecked boxes, sample claims, and old generated artifacts would create too much noise. It is a low-noise documentation pass, not a release gate for code or public artifacts.
 
 ```bash
 python3 repo_preflight.py --repo . --profile docs
 ```
 
+```yaml
+with:
+  repo: "."
+  profile: docs
+```
+
 ### public-export
 
-Use this before publishing a repository, package, GitHub Action, template, or downloadable product.
+Use `public-export` before publishing a repository, package, GitHub Action, template, or downloadable product. It includes the `strict` checks and adds public-export hygiene checks for private planning paths, tracked report outputs, tracked secret-bearing filenames, high-confidence secret literals, and sensitive public-export terms. Use `--paranoid` or `paranoid: true` when the report may leave a private workspace.
 
 ```bash
 python3 repo_preflight.py --repo . --profile public-export --paranoid
 ```
 
+```yaml
+with:
+  repo: "."
+  profile: public-export
+  paranoid: true
+```
+
+Profile selection is about scan intent, not proof of safety. A clean report only means this deterministic preflight did not find the specific release-discipline problems it checks for.
+
 ## Report outputs
 
 - Markdown: human-readable fix list.
-- JSON: machine-readable results for automation or baselines.
+- JSON: machine-readable results for automation or baselines. See [JSON report schema](../report-schema.md).
 - HTML: shareable local report.
-- SARIF: code-scanning compatible format.
+- SARIF: code-scanning compatible format for CI review surfaces. See [SARIF output](../sarif-output.md).
+
+## Rule packs
+
+Use JSON rule packs with `--config` to add team-specific terms, generated directories, exclusions, and required process-file labels. See [rule packs](../rule-packs.md) for supported keys and merge behavior.
 
 ## Baseline diff
 

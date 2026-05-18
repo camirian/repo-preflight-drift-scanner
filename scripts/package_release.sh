@@ -21,13 +21,23 @@ rm -rf "${STAGE_DIR}" "${ZIP_PATH}"
 mkdir -p "${STAGE_DIR}"
 
 copy_if_present README.md README.md
+copy_if_present SPEC.md SPEC.md
+copy_if_present VERIFICATION_PLAN.md VERIFICATION_PLAN.md
+copy_if_present PRE_RELEASE_CHECKLIST.md PRE_RELEASE_CHECKLIST.md
+copy_if_present SECURITY.md SECURITY.md
+copy_if_present BLAST_RADIUS_AUDIT.md BLAST_RADIUS_AUDIT.md
+copy_if_present Makefile Makefile
+copy_if_present verify_scanner.py verify_scanner.py
 copy_if_present repo_preflight.py repo_preflight.py
 copy_if_present action.yml action.yml
 copy_if_present scripts/action_entrypoint.sh scripts/action_entrypoint.sh
+copy_if_present scripts/package_release.sh scripts/package_release.sh
 copy_if_present configs configs
 copy_if_present examples examples
+copy_if_present docs/report-schema.md docs/report-schema.md
+copy_if_present docs/rule-packs.md docs/rule-packs.md
+copy_if_present docs/sarif-output.md docs/sarif-output.md
 copy_if_present docs/buyer docs/buyer
-copy_if_present docs/release-checklist.md release-checklist.md
 copy_if_present buyer-license.txt buyer-license.txt
 
 cat > "${STAGE_DIR}/README-for-buyers.md" <<'EOF'
@@ -38,7 +48,7 @@ Start here:
 1. Read `docs/buyer/quickstart.md`.
 2. Run the local demo against `examples/sample-repo`.
 3. Run `repo_preflight.py` against your own repository.
-4. For GitHub Actions, copy the workflow from `docs/buyer/github-action-setup.md`.
+4. For GitHub Actions, read `docs/buyer/github-action-setup.md` and copy the workflow from `examples/github-action.yml`.
 
 This package is a deterministic preflight kit for AI-assisted repositories. It is not a vulnerability scanner, compliance scanner, or replacement for human review.
 EOF
@@ -55,12 +65,18 @@ find "${STAGE_DIR}" \
 
 python3 - <<PY
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 root = Path(r"${STAGE_DIR}")
 zip_path = Path(r"${ZIP_PATH}")
+fixed_timestamp = (1980, 1, 1, 0, 0, 0)
 with ZipFile(zip_path, "w", ZIP_DEFLATED) as zf:
     for path in sorted(root.rglob("*")):
         if path.is_file():
-            zf.write(path, path.relative_to(root.parent))
+            archive_name = str(path.relative_to(root.parent))
+            info = ZipInfo(archive_name, fixed_timestamp)
+            info.compress_type = ZIP_DEFLATED
+            mode = 0o755 if path.suffix == ".sh" or path.stat().st_mode & 0o111 else 0o644
+            info.external_attr = mode << 16
+            zf.writestr(info, path.read_bytes())
 print(zip_path)
 PY
