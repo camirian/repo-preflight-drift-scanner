@@ -1,0 +1,72 @@
+name: Fieldheld Preflight Scan
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  portfolio-gate:
+    name: Fieldheld Portfolio Preflight Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Runs the Fieldheld Portfolio check to verify AI capability evidence
+      # and strict release discipline as a blocking quality gate.
+      - name: Run Fieldheld Portfolio Preflight
+        uses: camirian/repo-preflight-drift-scanner@v0.4
+        with:
+          repo: "."
+          profile: "fieldheld-portfolio"
+          config: "configs/fieldheld-portfolio.json"
+          fail-on-blockers: "true"
+          out-md: "REPO_PREFLIGHT_REPORT.md"
+          out-json: "REPO_PREFLIGHT_REPORT.json"
+          out-html: "REPO_PREFLIGHT_REPORT.html"
+
+      - name: Upload QA Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fieldheld-qa-reports
+          path: |
+            REPO_PREFLIGHT_REPORT.md
+            REPO_PREFLIGHT_REPORT.json
+            REPO_PREFLIGHT_REPORT.html
+
+  public-export-hygiene:
+    name: Public Export Hygiene Check
+    runs-on: ubuntu-latest
+    # This check can run alongside or on a release-candidate branch.
+    # It runs with paranoid privacy options to audit and prepare public releases.
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Public Export Scrub
+        uses: camirian/repo-preflight-drift-scanner@v0.4
+        with:
+          repo: "."
+          profile: "public-export"
+          paranoid: "true"
+          config: "configs/fieldheld-portfolio.json"
+          fail-on-blockers: "true"
+          out-md: "PUBLIC_EXPORT_REPORT.md"
+          out-json: "PUBLIC_EXPORT_REPORT.json"
+          out-sarif: "PUBLIC_EXPORT_REPORT.sarif"
+
+      - name: Upload Export Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-export-reports
+          path: |
+            PUBLIC_EXPORT_REPORT.md
+            PUBLIC_EXPORT_REPORT.json
+            PUBLIC_EXPORT_REPORT.sarif

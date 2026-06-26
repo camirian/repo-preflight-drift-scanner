@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/camirian/repo-preflight-drift-scanner/docs/report.schema.json",
+  "title": "Repo Preflight JSON Report",
+  "description": "Machine-readable contract for repo_preflight.py --out-json reports.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "repo",
+    "profile",
+    "decision",
+    "counts",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "repo": {
+      "type": "string"
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision": {
+      "enum": [
+        "READY",
+        "BLOCKED"
+      ]
+    },
+    "counts": {
+      "$ref": "#/$defs/counts"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "baseline_diff": {
+      "$ref": "#/$defs/baseline_diff"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "required": [
+        "blocker",
+        "warning",
+        "info"
+      ],
+      "properties": {
+        "blocker": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warning": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "info": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "finding": {
+      "type": "object",
+      "required": [
+        "level",
+        "code",
+        "path",
+        "message"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "blocker",
+            "warning",
+            "info"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "evidence": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "baseline_diff": {
+      "type": "object",
+      "required": [
+        "new",
+        "resolved",
+        "new_findings",
+        "resolved_findings"
+      ],
+      "properties": {
+        "new": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resolved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        },
+        "resolved_findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

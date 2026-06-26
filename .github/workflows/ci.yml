@@ -1,0 +1,202 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    name: Verify scanner (Python ${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Verify scanner
+        run: python verify_scanner.py
+
+      - name: Compile Python
+        run: python -m py_compile repo_preflight.py verify_scanner.py
+
+  package-boundary:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: v0.5
+      PACKAGE_NAME: ai-agent-repo-preflight-kit-v0.5
+      ZIP_PATH: release/ai-agent-repo-preflight-kit-v0.5.zip
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build and verify release package locally
+        run: make release-check VERSION="${VERSION}"
+
+      - name: Inspect package manifest
+        run: python3 -m zipfile -l "${ZIP_PATH}"
+
+      - name: Smoke test extracted package
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "${tmpdir}"' EXIT
+
+          python3 -m zipfile -e "${ZIP_PATH}" "${tmpdir}"
+          cd "${tmpdir}/${PACKAGE_NAME}"
+
+          python3 verify_scanner.py
+
+          set +e
+          python3 repo_preflight.py \
+            --repo examples/sample-repo \
+            --include-fixtures \
+            --out-md EXTRACTED_FIXTURE_REPORT.md \
+            --out-json EXTRACTED_FIXTURE_REPORT.json \
+            --out-html EXTRACTED_FIXTURE_REPORT.html \
+            --out-sarif EXTRACTED_FIXTURE_REPORT.sarif
+          status="$?"
+          set -e
+
+          if [ "${status}" -eq 0 ]; then
+            echo "Expected sample repo fixture to report blockers."
+            exit 1
+          fi
+          if [ "${status}" -ne 1 ]; then
+            echo "Expected sample repo fixture to exit 1, got ${status}."
+            exit "${status}"
+          fi
+
+          python3 - <<'PY'
+          import json
+          payload = json.load(open("EXTRACTED_FIXTURE_REPORT.json", encoding="utf-8"))
+          assert payload["decision"] == "BLOCKED", payload
+          assert payload["counts"]["blocker"] > 0, payload
+          PY
+
+  action-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run action against synthetic fixture
+        uses: ./
+        with:
+          repo: examples/sample-repo
+          include-fixtures: true
+          fail-on-blockers: false
+          out-md: FIXTURE_REPORT.md
+          out-json: FIXTURE_REPORT.json
+          out-html: FIXTURE_REPORT.html
+          out-sarif: FIXTURE_REPORT.sarif
+
+      - name: Assert fixture is blocked
+        shell: python
+        run: |
+          import json
+          payload = json.load(open("FIXTURE_REPORT.json", encoding="utf-8"))
+          assert payload["decision"] == "BLOCKED", payload
+          assert payload["counts"]["blocker"] > 0, payload
+
+      - name: Create DORA AI readiness fixtures
+        shell: python
+        run: |
+          from pathlib import Path
+
+          ready = Path("tmp/dora-ready")
+          ready.mkdir(parents=True)
+          (ready / "README.md").write_text(
+              "# DORA Ready Fixture\n\n"
+              "## AI Stance\n"
+              "LLMs may summarize docs and draft implementation notes, but human review is required before release.\n\n"
+              "## Data Boundary\n"
+              "Allowed data is synthetic examples and public docs. Forbidden data includes secrets and private data.\n\n"
+              "## AI-Accessible Context\n"
+              "Agents may use AGENTS.md, schemas, examples, and this docs index as context.\n\n"
+              "## Version Control And Rollback\n"
+              "Use small commits with a documented rollback path and release manifest.\n\n"
+              "## Small Batches\n"
+              "The next slice has acceptance criteria and kill criteria before implementation.\n\n"
+              "## User Focus\n"
+              "Primary user is an AI-assisted builder; the buyer success signal is a clear ship/hold decision.\n\n"
+              "## Internal Platform\n"
+              "Quickstart and verification command: python3 repo_preflight.py --profile dora-ai-readiness.\n",
+              encoding="utf-8",
+          )
+          (ready / "AGENTS.md").write_text("# Agent Context\n\nFollow the README boundaries.\n", encoding="utf-8")
+
+          weak = Path("tmp/dora-weak")
+          weak.mkdir(parents=True)
+          (weak / "README.md").write_text("# DORA Weak Fixture\n\nThis repo uses AI to move fast.\n", encoding="utf-8")
+
+      - name: Run action against DORA-ready fixture
+        uses: ./
+        with:
+          repo: tmp/dora-ready
+          profile: dora-ai-readiness
+          fail-on-blockers: false
+          github-annotations: false
+          out-md: DORA_READY_REPORT.md
+          out-json: DORA_READY_REPORT.json
+          out-html: DORA_READY_REPORT.html
+          out-sarif: DORA_READY_REPORT.sarif
+
+      - name: Run action against DORA-weak fixture
+        uses: ./
+        with:
+          repo: tmp/dora-weak
+          profile: dora-ai-readiness
+          fail-on-blockers: false
+          github-annotations: false
+          out-md: DORA_WEAK_REPORT.md
+          out-json: DORA_WEAK_REPORT.json
+          out-html: DORA_WEAK_REPORT.html
+          out-sarif: DORA_WEAK_REPORT.sarif
+
+      - name: Assert DORA action decisions
+        shell: python
+        run: |
+          import json
+          ready = json.load(open("DORA_READY_REPORT.json", encoding="utf-8"))
+          weak = json.load(open("DORA_WEAK_REPORT.json", encoding="utf-8"))
+          assert ready["profile"] == "dora-ai-readiness", ready
+          assert weak["profile"] == "dora-ai-readiness", weak
+          assert ready["decision"] == "READY", ready
+          assert weak["decision"] == "BLOCKED", weak
+          assert weak["counts"]["blocker"] > 0, weak
+
+      - name: Upload fixture reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-report
+          path: |
+            FIXTURE_REPORT.md
+            FIXTURE_REPORT.json
+            FIXTURE_REPORT.html
+            FIXTURE_REPORT.sarif
+            DORA_READY_REPORT.md
+            DORA_READY_REPORT.json
+            DORA_READY_REPORT.html
+            DORA_READY_REPORT.sarif
+            DORA_WEAK_REPORT.md
+            DORA_WEAK_REPORT.json
+            DORA_WEAK_REPORT.html
+            DORA_WEAK_REPORT.sarif

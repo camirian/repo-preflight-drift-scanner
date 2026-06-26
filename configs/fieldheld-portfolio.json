@@ -1,0 +1,41 @@
+{
+  "required_process_files": {
+    "README": ["README.md"],
+    "SPEC": ["SPEC.md", "docs/SPEC.md"],
+    "VERIFICATION_PLAN": ["VERIFICATION_PLAN.md", "docs/VERIFICATION_PLAN.md"],
+    "PRE_RELEASE_CHECKLIST": ["PRE_RELEASE_CHECKLIST.md", "docs/PRE_RELEASE_CHECKLIST.md"]
+  },
+  "risky_claims": [
+    "certification",
+    "certified secure",
+    "compliance approval",
+    "compliance approved",
+    "dora maturity",
+    "dora-mature",
+    "certified ready",
+    "approved compliance"
+  ],
+  "drift_markers": [
+    "coming soon",
+    "figure this out",
+    "not implemented",
+    "quick hack",
+    "temporary workaround"
+  ],
+  "generated_dirs": [
+    "coverage",
+    "tmp",
+    "dist",
+    "build"
+  ],
+  "excluded_dirs": [
+    ".venv",
+    "venv",
+    "node_modules"
+  ],
+  "excluded_files": [
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml"
+  ]
+}
