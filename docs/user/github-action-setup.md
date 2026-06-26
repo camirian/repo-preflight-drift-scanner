@@ -6,11 +6,11 @@ Use the GitHub Action when you want Repo Preflight to run as part of a repositor
 
 1. Add a workflow file under `.github/workflows/` in the repository you want to scan.
 2. Check out the repository.
-3. Run the latest published tag, such as `camirian/repo-preflight-drift-scanner@v0.4`, unless your package or branch explicitly includes a newer profile.
+3. Reference the Action with `camirian/repo-preflight-drift-scanner@main`. Pin to a published release tag instead once one is available.
 4. Choose a profile: `strict`, `docs`, `dora-ai-readiness`, or `public-export`.
 5. Save Markdown, JSON, HTML, or SARIF reports as needed.
 
-Use the latest published Action tag unless your release package explicitly includes a newer tag.
+Pin to a specific release tag when one is published; otherwise `@main` tracks the current default branch.
 
 ## Recommended settings
 
