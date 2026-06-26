@@ -20,7 +20,7 @@ jobs:
       # Runs the Fieldheld Portfolio check to verify AI capability evidence
       # and strict release discipline as a blocking quality gate.
       - name: Run Fieldheld Portfolio Preflight
-        uses: camirian/repo-preflight-drift-scanner@v0.4
+        uses: camirian/repo-preflight-drift-scanner@main
         with:
           repo: "."
           profile: "fieldheld-portfolio"
@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Public Export Scrub
-        uses: camirian/repo-preflight-drift-scanner@v0.4
+        uses: camirian/repo-preflight-drift-scanner@main
         with:
           repo: "."
           profile: "public-export"

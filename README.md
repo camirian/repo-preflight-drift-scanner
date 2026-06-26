@@ -33,7 +33,7 @@ See [docs/dora-ai-readiness.md](docs/dora-ai-readiness.md) for DORA AI readiness
 GitHub Action:
 
 ```yaml
-- uses: camirian/repo-preflight-drift-scanner@v0.4
+- uses: camirian/repo-preflight-drift-scanner@main
   with:
     repo: "."
     profile: public-export
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: camirian/repo-preflight-drift-scanner@v0.4
+      - uses: camirian/repo-preflight-drift-scanner@main
         with:
           repo: "."
           profile: public-export
@@ -206,7 +206,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: camirian/repo-preflight-drift-scanner@v0.4
+      - uses: camirian/repo-preflight-drift-scanner@main
         with:
           repo: "."
           profile: strict
@@ -229,6 +229,34 @@ python3 repo_preflight.py \
 ```
 
 The synthetic sample intentionally blocks so users can inspect the report format without using private project data.
+
+### Sample output
+
+Running the demo against `examples/sample-repo` produces a Markdown report like this (trimmed; finding descriptions paraphrased so this README stays clean under its own self-scan):
+
+```markdown
+# Repo Preflight Report
+
+Repo: `examples/sample-repo`
+Profile: `strict`
+Decision: BLOCKED
+
+## Summary
+
+- Blockers: 3
+- Warnings: 3
+- Info: 0
+
+## Findings
+
+- **BLOCKER** `missing_process_file` at `.`: Missing process file: VERIFICATION_PLAN
+- **BLOCKER** `unchecked_release_gate` at `PRE_RELEASE_CHECKLIST.md:4`: Unchecked checklist item remains.
+- **BLOCKER** `risky_public_claim` at `README.md:3`: Risky public claim detected in marketing copy
+- **WARNING** `drift_marker` at `README.md:5`: Possible AI/process drift marker in draft text
+- **WARNING** `generated_artifact_dir` at `dist`: Generated/cache directory present; keep out of release artifacts.
+```
+
+The process prints `Repo preflight ready.` and exits `0` when the repo is clean, and prints `Repo preflight found blockers.` and exits `1` when it finds blockers, so it gates CI directly.
 
 ## 60-Second Demo
 
