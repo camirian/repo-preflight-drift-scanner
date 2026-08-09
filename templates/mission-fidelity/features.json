@@ -1,0 +1,19 @@
+{
+  "features": [
+    {
+      "id": "F-001",
+      "class": "mirror",
+      "user_visible": true,
+      "changes_default_workflow": false,
+      "source_evidence": [
+        {
+          "kind": "primary_artifact",
+          "ref": "replace-with-exact-originating-source-reference"
+        }
+      ],
+      "implementation_paths": [
+        "src/replace-with-implementation-path"
+      ]
+    }
+  ]
+}
