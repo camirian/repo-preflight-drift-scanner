@@ -1,0 +1,32 @@
+{
+  "objective": "State the stable owner-level mission here.",
+  "default_invention_budget": 0,
+  "derived_analysis_may_authorize_user_behavior": false,
+  "canonical_agent_doctrine": "AGENTS.md",
+  "tool_specific_instructions_may_override_agents": false,
+  "product_roots": ["src"],
+  "protected_mission_paths": [
+    "AGENTS.md",
+    ".mission/owner_constraints.json",
+    ".mission/features.json"
+  ],
+  "allowed_change_classes": [
+    "mirror",
+    "defect_fix",
+    "augmentation",
+    "infrastructure",
+    "research"
+  ],
+  "primary_source_kinds": [
+    "primary_artifact",
+    "source_system",
+    "user_confirmed"
+  ],
+  "user_confirmation_kinds": [
+    "user_confirmed",
+    "domain_confirmed"
+  ],
+  "owner_authorization_kinds": [
+    "owner_explicit"
+  ]
+}
